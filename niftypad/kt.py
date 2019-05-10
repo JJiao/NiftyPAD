@@ -54,6 +54,8 @@ def tdur2mft(tdur):
 
 
 def int2dt(f1, dt):
+    # in case dt is not in whole seconds
+    dt = np.rint(dt).astype(int)
     tdur = dt2tdur(dt)
     f = np.zeros(tdur.size)
     for j in range(0, tdur.size):
