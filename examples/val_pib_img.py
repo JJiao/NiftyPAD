@@ -4,9 +4,9 @@ __contact__ = 'jieqing.jiao@gmail.com'
 import numpy as np
 import nibabel as nib
 import os
-from NiftyPAD.niftypad.kt import *
-from NiftyPAD.niftypad.tac import TAC, Ref
-from NiftyPAD.niftypad import basis
+from niftypad.kt import *
+from niftypad.tac import TAC, Ref
+from niftypad import basis
 
 
 # dt

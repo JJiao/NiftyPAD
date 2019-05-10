@@ -4,7 +4,6 @@ __contact__ = 'jieqing.jiao@gmail.com'
 import nibabel as nib
 import csv
 import os
-print(os.environ.get('PYTHONPATH', ''))
 
 from niftypad.tac import TAC, Ref
 from niftypad import basis
