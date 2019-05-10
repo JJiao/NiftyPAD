@@ -48,5 +48,5 @@ for i in range(pet_img.shape[0]):
 # save results
 for m in range(len(models)):
     for p in range(len(km_outputs)):
-        nib.save(nib.Nifti1Image(img_results[:, :, :, p, m].squeeze(), img.affine), file_path +
+        nib.save(nib.Nifti1Image(img_results[:, :, :, p, m].squeeze(), pet_img.affine), file_path +
                  os.path.splitext(pet_file)[0] + '_' + models[m] + '_' + km_outputs[p] + '.nii')
