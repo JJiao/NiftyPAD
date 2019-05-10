@@ -28,17 +28,17 @@ km_outputs = ['R1', 'k2', 'BP']
 # img
 file_path = '/Users/Himiko/data/amsterdam_data_pib/transfer_162391_files_89f2cba1/'
 pet_file = 'p01_scan1_PET_e2a_128_63_N.hdr'
-img = nib.load(file_path + pet_file)
-img_data = img.get_data()
+pet_img = nib.load(file_path + pet_file)
+pet_img_data = img.get_data()
 
 # get results
-img_results = np.zeros(img.shape[0:3] + (len(km_outputs), len(models)))
-thr = 0.005*np.amax(img_data)
-for i in range(img.shape[0]):
-    for j in range(img.shape[1]):
-        for k in range(img.shape[2]):
+img_results = np.zeros(pet_img.shape[0:3] + (len(km_outputs), len(models)))
+thr = 0.005*np.amax(pet_img_data)
+for i in range(pet_img.shape[0]):
+    for j in range(pet_img.shape[1]):
+        for k in range(pet_img.shape[2]):
             if np.mean(img_data[i, j, k, ]) > thr:
-                tac = TAC(img_data[i, j, k, ], dt)
+                tac = TAC(pet_img_data[i, j, k, ], dt)
                 for m in range(len(models)):
                     getattr(tac, 'run_' + models[m])(**km_inputs)
                     for p in range(len(km_outputs)):
