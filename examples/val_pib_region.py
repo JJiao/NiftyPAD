@@ -4,12 +4,12 @@ __contact__ = 'jieqing.jiao@gmail.com'
 import nibabel as nib
 import csv
 import os
-# print(os.environ.get('PYTHONPATH', ''))
+print(os.environ.get('PYTHONPATH', ''))
 
-from NiftyPAD.niftypad.tac import TAC, Ref
-from NiftyPAD.niftypad import basis
-from NiftyPAD.niftypad.kt import *
-from NiftyPAD.niftypad.image_proc.regions import extract_regional_values
+from niftypad.tac import TAC, Ref
+from niftypad import basis
+from niftypad.kt import *
+from niftypad.image_proc.regions import extract_regional_values
 
 # dt
 dt = np.array([[0,15,20,25,30,40,50,60,90,120,180,240,300,450,600,900,1200,1800,2400,3000,3600,4200,4800],

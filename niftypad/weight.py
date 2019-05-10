@@ -3,7 +3,7 @@ __email__ = "jieqing.jiao@gmail.com"
 
 # weighting scheme implementation based on https://www.ncbi.nlm.nih.gov/pubmed/16912378
 
-from NiftyPAD.niftypad import kt
+from niftypad import kt
 import numpy as np
 
 

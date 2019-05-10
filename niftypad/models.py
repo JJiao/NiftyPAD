@@ -6,9 +6,9 @@ from scipy.optimize import curve_fit
 from scipy.stats import linregress
 import matplotlib.pyplot as plt
 
-from NiftyPAD.niftypad import kt
-from NiftyPAD.niftypad import kp
-from NiftyPAD.niftypad import basis
+from niftypad import kt
+from niftypad import kp
+from niftypad import basis
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # linear models
