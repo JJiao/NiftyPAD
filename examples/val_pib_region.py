@@ -8,7 +8,7 @@ import os
 from niftypad.tac import TAC, Ref
 from niftypad import basis
 from niftypad.kt import *
-from niftypad.image_proc.regions import extract_regional_values
+from niftypad.image_process.regions import extract_regional_values
 
 # dt
 dt = np.array([[0,15,20,25,30,40,50,60,90,120,180,240,300,450,600,900,1200,1800,2400,3000,3600,4200,4800],
@@ -32,7 +32,7 @@ pet_file = 'p01_scan1_PET_e2a_128_63_N.hdr'
 parcellation_file = 'p01_scan1_PET_e2a_128_63_N_GMWM_ROI.hdr'
 pet_img = nib.load(file_path + pet_file)
 parcellation_img = nib.load(file_path + parcellation_file)
-img_data = pet_img.get_data()
+pet_img_data = pet_img.get_data()
 parcellation = parcellation_img.get_data().astype(np.int16)
 regions_label = np.unique(parcellation)
 
@@ -47,7 +47,7 @@ results_writer.writerow(['label'] + [mm + '_' + kk for mm in models for kk in km
 for i in range(regions_label.size):
     region_results = []
     region_results.append(regions_label[i])
-    tac_data = extract_regional_values(img_data, parcellation, [regions_label[i]])
+    tac_data = extract_regional_values(pet_img_data, parcellation, [regions_label[i]])
     tac = TAC(tac_data, dt)
     for m in range(len(models)):
         getattr(tac, 'run_' + models[m])(**km_inputs)
