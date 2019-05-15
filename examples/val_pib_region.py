@@ -38,7 +38,7 @@ regions_label = np.unique(parcellation)
 
 # write the csv header info
 results_file_name = file_path + os.path.splitext(pet_file)[0] + '_' + '_'.join(models) + '.csv'
-results_file = open(results_file_name, 'w', newline='')
+results_file = open(results_file_name, 'w')
 results_writer = csv.writer(results_file, dialect='excel-tab', delimiter=',')
 results_writer.writerow(['label'] + [mm + '_' + kk for mm in models for kk in km_outputs])
 
