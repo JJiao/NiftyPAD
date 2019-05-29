@@ -46,6 +46,8 @@ def kinetic_model_motion_correction_file(pet_file, dt, model, km_inputs_initial,
         motion_file = open(motion_file_name, 'w')
         motion_writer = csv.writer(motion_file, dialect='excel-tab', delimiter=',')
         motion_writer.writerows(list(zip(translation_t, rotation_t)))
+        motion_file.close()
+
 
 
 
