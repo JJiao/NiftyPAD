@@ -124,7 +124,7 @@ def image_rigid_transform_3d(image, translation, rotation):
     return image_new
 
 
-def image_registration_3d_gn(image, image_ref, translation=[0, 0, 0], rotation=[0, 0, 0], n_iter=100):
+def image_registration_3d_gn(image, image_ref, translation, rotation, n_iter=100):
     '''
     rigid registration of two 3d images using Gauss-Newton method
     :param image:
@@ -140,13 +140,14 @@ def image_registration_3d_gn(image, image_ref, translation=[0, 0, 0], rotation=[
     xv, yv, zv = np.meshgrid(x_range, y_range, z_range, indexing='ij')
     centre = [xv.mean(), yv.mean(), zv.mean()]
     for i in range(n_iter):
+        print(i)
         xv_new, yv_new, zv_new = affine_transform_centre(xv, yv, zv, translation, rotation, centre)
         image_new = interpn((x_range, y_range, z_range), image,
                             np.vstack((xv_new.flatten(), yv_new.flatten(), zv_new.flatten())).transpose(),
                             bounds_error=False)
         image_new = image_new.reshape(image.shape)
         dx_over_dp, dy_over_dp, dz_over_dp = d_coordinates_over_d_transform(xv, yv, zv, translation, rotation, centre)
-        image_new_g = image_new
+        image_new_g = image_new * 1
         image_new_g[np.isnan(image_new)] = 0
         image_gradient = np.gradient(image_new_g)
         image_gradient_x = np.matlib.repmat(image_gradient[0].flatten(), dx_over_dp.shape[-1], 1).transpose()
@@ -159,4 +160,18 @@ def image_registration_3d_gn(image, image_ref, translation=[0, 0, 0], rotation=[
         update = solve(a, jacobian.transpose()) @ image_diff.flatten()
         translation = np.subtract(translation, update[:3])
         rotation = np.subtract(rotation, update[3:])
+        print(translation)
+        print(rotation)
+        if all(abs(update) < 0.01):
+            break
     return translation, rotation, image_new_g
+
+
+def image_registration_3d_plus_t(image_t, image_ref_t, translation_t, rotation_t, registration_index, n_iter=100):
+    image_new_t = image_t * 1
+    for t in registration_index:
+        translation_t[t], rotation_t[t], image_new_t[:, :, :, t] = \
+            image_registration_3d_gn(image_t[:, :, :, t], image_ref_t[:, :, :, t],
+                                     translation=translation_t[t], rotation=rotation_t[t], n_iter=n_iter)
+    return translation_t, rotation_t, image_new_t
+
