@@ -40,6 +40,16 @@ def srtmb_basis(tac, b):
     return r1, k2, bp, tacf
 
 
+def srtmb_basis_para2tac(r1, k2, bp, b):
+    tacf = []
+    theta = kp.srtm_kp2theta(r1, k2, bp)
+    i = np.argwhere(abs(b['beta'] - theta[-1]) < 1e-10).squeeze()
+    if not i == []:
+        a = np.column_stack((b['input'], b['basis'][i, :]))
+        tacf = np.dot(a, theta[:-1])
+    return tacf
+
+
 # srtmb - srtm model for tac, basis functions will be calculated
 
 def srtmb(tac, dt, inputf1, w):
@@ -152,6 +162,11 @@ def srtm_fun(inputf1_dt, r1, k2, bp):
     tac1 = theta[0]*inputf1
     tac1 += theta[1]*np.convolve(inputf1, np.exp(-theta[2]*t1))[0:tac1.size]
     tac = kt.int2dt(tac1, dt)
+    return tac
+
+
+def srtm_para2tac(r1, k2, bp, inputf1_dt):
+    tac = srtm_fun(inputf1_dt, r1, k2, bp)
     return tac
 
 
