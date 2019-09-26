@@ -4,7 +4,9 @@ __email__ = "jieqing.jiao@gmail.com"
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.stats import linregress
+from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
+import inspect
 
 from niftypad import kt
 from niftypad import kp
@@ -37,7 +39,8 @@ def srtmb_basis(tac, b):
 
     theta = np.append(theta, b['beta'][i])
     r1, k2, bp = kp.srtm_theta2kp(theta)
-    return r1, k2, bp, tacf
+    kps = {'r1': r1, 'k2': k2, 'bp': bp, 'tacf': tacf}
+    return kps
 
 
 def srtmb_basis_para2tac(r1, k2, bp, b):
@@ -54,8 +57,8 @@ def srtmb_basis_para2tac(r1, k2, bp, b):
 
 def srtmb(tac, dt, inputf1, w):
     b = basis.make_basis(inputf1, dt, beta_lim=[10e-6, 10e-1], n_beta=128, w=w)
-    r1, k2, bp, tacf = srtmb_basis(tac, b)
-    return r1, k2, bp, tacf
+    kps = srtmb_basis(tac, b)
+    return kps
 
 
 # srtmb_asl - srtm model for tac with fixed R1, basis functions will be calculated
@@ -83,8 +86,8 @@ def srtmb_asl(tac, dt, inputf1, w, r1):
 
     theta = np.append(theta, b['beta'][i])
     r1, k2, bp = kp.srtm_theta2kp(theta)
-    return r1, k2, bp, tacf
-
+    kps = {'r1': r1, 'k2': k2, 'bp': bp, 'tacf': tacf}
+    return kps
 
 # srtmb_k2p_basis - srtm model for img with fixed k2p and pre-calculated basis functions
 
@@ -106,20 +109,22 @@ def srtmb_k2p_basis(tac, b):
     theta = np.append(theta, r1 * (b['k2p'] - b['beta'][i]))
     theta = np.append(theta, b['beta'][i])
     r1, k2, bp = kp.srtm_theta2kp(theta)
-    return r1, k2, bp, tacf
-
+    kps = {'r1': r1, 'k2': k2, 'bp': bp, 'tacf': tacf}
+    return kps
 
 # srtmb_k2p - srtm model for tac with fixed k2p, basis functions will be calculated
 
+
 def srtmb_k2p(tac, dt, inputf1, w, k2p):
     b = basis.make_basis(inputf1, dt, beta_lim=[10e-6, 10e-1], n_beta=128, w=w, k2p=k2p)
-    r1, k2, bp, tacf = srtmb_k2p_basis(tac, b)
-    return r1, k2, bp, tacf
+    kps = srtmb_k2p_basis(tac, b)
+    return kps
+
+# logan_ref - logan reference plot without fixed k2p for tac, based on eq.7 in
+# "Distribution Volume Ratios Without Blood Sampling from Graphical Analysis of PET Data"
 
 
-# logan_ref_k2p - logan reference plot with fixed k2p for tac
-
-def logan_ref_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig=True):
+def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     if linear_phase_start is None:
         linear_phase_start = 0
     if linear_phase_end is None:
@@ -135,18 +140,130 @@ def logan_ref_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, f
     input_cum = np.cumsum((input_dt[:-1] + input_dt[1:]) / 2 * tdur)
     tac = tac[1:]
     input_dt = input_dt[1:]
-    yy = tac_cum / tac
-    xx = (input_cum + input_dt / k2p) / tac
+    yy = np.zeros(tac.shape)
+    xx = np.zeros(tac.shape)
+    mask = tac.nonzero()
+    yy[mask] = tac_cum[mask] / tac[mask]
+    xx[mask] = input_cum[mask] / tac[mask]
     tt = np.logical_and(mft > linear_phase_start, mft < linear_phase_end)
     tt = tt[1:]
     dvr, inter, _,  _,  _ = linregress(xx[tt], yy[tt])
     bp = dvr - 1
     yyf = dvr * xx + inter
     if fig:
-        plt.plot(xx, yy, 'o')
+        plt.plot(xx, yy, '.')
         plt.plot(xx[tt], yyf[tt], 'r')
         plt.show()
-    return bp
+    kps = {'bp': bp}
+    return kps
+
+
+# logan_ref_k2p - logan reference plot with fixed k2p for tac
+
+def logan_ref_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
+    if linear_phase_start is None:
+        linear_phase_start = 0
+    if linear_phase_end is None:
+        linear_phase_end = np.amax(dt)
+    mft = kt.dt2mft(dt)
+    mft = np.append(0, mft)
+    dt_new = np.array([mft[:-1], mft[1:]])
+    tdur = kt.dt2tdur(dt_new)
+    input_dt = kt.int2dt(inputf1,dt)
+    tac = np.append(0, tac)
+    input_dt = np.append(0, input_dt)
+    tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
+    input_cum = np.cumsum((input_dt[:-1] + input_dt[1:]) / 2 * tdur)
+    tac = tac[1:]
+    input_dt = input_dt[1:]
+    yy = np.zeros(tac.shape)
+    xx = np.zeros(tac.shape)
+    mask = tac.nonzero()
+    yy[mask] = tac_cum[mask] / tac[mask]
+    xx[mask] = (input_cum[mask] + input_dt[mask] / k2p) / tac[mask]
+    tt = np.logical_and(mft > linear_phase_start, mft < linear_phase_end)
+    tt = tt[1:]
+    dvr, inter, _,  _,  _ = linregress(xx[tt], yy[tt])
+    bp = dvr - 1
+    yyf = dvr * xx + inter
+    if fig:
+        plt.plot(xx, yy, '.')
+        plt.plot(xx[tt], yyf[tt], 'r')
+        plt.show()
+    kps = {'bp': bp}
+    return kps
+
+
+# mrtm - Ichise's multilinear reference tissue model
+
+def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
+    if linear_phase_start is None:
+        linear_phase_start = 0
+    if linear_phase_end is None:
+        linear_phase_end = np.amax(dt)
+    mft = kt.dt2mft(dt)
+    mft = np.append(0, mft)
+    dt_new = np.array([mft[:-1], mft[1:]])
+    tdur = kt.dt2tdur(dt_new)
+    input_dt = kt.int2dt(inputf1,dt)
+    tac = np.append(0, tac)
+    input_dt = np.append(0, input_dt)
+    tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
+    input_cum = np.cumsum((input_dt[:-1] + input_dt[1:]) / 2 * tdur)
+    tac = tac[1:]
+    input_dt = input_dt[1:]
+    yy = tac
+    xx = np.column_stack((input_cum, tac_cum, input_dt))
+    tt = np.logical_and(mft > linear_phase_start, mft < linear_phase_end)
+    tt = tt[1:]
+    mft = mft[1:]
+    reg = LinearRegression(fit_intercept=False).fit(xx[tt, ], yy[tt])
+    bp = - reg.coef_[0]/reg.coef_[1] - 1
+    k2p = reg.coef_[0]/reg.coef_[2]
+    # for 1 TC
+    r1 = reg.coef_[2]
+    k2 = - reg.coef_[1]
+    yyf = reg.predict(xx)
+    if fig:
+        plt.plot(mft, yy, '.')
+        plt.plot(mft, yyf, 'r')
+        plt.show()
+    kps = {'bp': bp, 'k2p': k2p, 'r1': r1, 'k2': k2}
+    return kps
+
+
+# mrtm - Ichise's multilinear reference tissue model with fixed k2prime
+
+def mrtm_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
+    if linear_phase_start is None:
+        linear_phase_start = 0
+    if linear_phase_end is None:
+        linear_phase_end = np.amax(dt)
+    mft = kt.dt2mft(dt)
+    mft = np.append(0, mft)
+    dt_new = np.array([mft[:-1], mft[1:]])
+    tdur = kt.dt2tdur(dt_new)
+    input_dt = kt.int2dt(inputf1,dt)
+    tac = np.append(0, tac)
+    input_dt = np.append(0, input_dt)
+    tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
+    input_cum = np.cumsum((input_dt[:-1] + input_dt[1:]) / 2 * tdur)
+    tac = tac[1:]
+    input_dt = input_dt[1:]
+    yy = tac
+    xx = np.column_stack((input_cum + 1 / k2p * input_dt, tac_cum))
+    tt = np.logical_and(mft > linear_phase_start, mft < linear_phase_end)
+    tt = tt[1:]
+    mft = mft[1:]
+    reg = LinearRegression(fit_intercept=False).fit(xx[tt, ], yy[tt])
+    bp = - reg.coef_[0]/reg.coef_[1] - 1
+    yyf = reg.predict(xx)
+    if fig:
+        plt.plot(mft, yy, '.')
+        plt.plot(mft, yyf, 'r')
+        plt.show()
+    kps = {'bp': bp}
+    return kps
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -189,8 +306,8 @@ def srtm(tac, dt, inputf1, w):
     k2 = p[1]
     bp = p[2]
     tacf = srtm_fun(inputf1_dt, r1, k2, bp)
-    return r1, k2, bp, tacf
-
+    kps = {'r1':r1, 'k2':k2, 'bp':bp, 'tacf':tacf}
+    return kps
 
 # srtm_k2p - srtm model for tac with fixed k2p, with non-linear optimisation
 
@@ -225,8 +342,8 @@ def srtm_k2p(tac, dt, inputf1, w, k2p):
     theta = np.array([theta_0, theta_1, theta_2])
     r1, k2, bp = kp.srtm_theta2kp(theta)
     tacf = srtm_fun_k2p(inputf1_dt_k2p, theta_0, theta_2)
-    return r1, k2, bp, tacf
-
+    kps = {'r1': r1, 'k2': k2, 'bp': bp, 'tacf': tacf}
+    return kps
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # #  model for ref input
@@ -298,3 +415,20 @@ def feng_srtm(tac, dt, w, fig):
         plt.plot(t1, cp1f, 'r', t1, tac1f, 'b', mft, tac, 'go')
         plt.show()
     return tac1f, p
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# # select model args from user_inputs
+# # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+def get_model_inputs(user_inputs, model_name):
+    sig = inspect.signature(globals()[model_name])
+    model_inputs = dict()
+    for p in sig.parameters.values():
+        n = p.name
+        d = p.default
+        if d == inspect.Parameter.empty:
+            d = None
+        if user_inputs.get(n, 0) is not 0:
+            model_inputs.update({n: user_inputs.get(n)})
+    return model_inputs
