@@ -50,21 +50,22 @@ def srtmb_basis_para2tac(r1, k2, bp, b):
     if not i == []:
         a = np.column_stack((b['input'], b['basis'][i, :]))
         tacf = np.dot(a, theta[:-1])
-    return tacf
+    kps = {'tacf': tacf}
+    return kps
 
 
 # srtmb - srtm model for tac, basis functions will be calculated
 
-def srtmb(tac, dt, inputf1, w):
-    b = basis.make_basis(inputf1, dt, beta_lim=[10e-6, 10e-1], n_beta=128, w=w)
+def srtmb(tac, dt, inputf1, beta_lim, n_beta, w):
+    b = basis.make_basis(inputf1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w)
     kps = srtmb_basis(tac, b)
     return kps
 
 
 # srtmb_asl - srtm model for tac with fixed R1, basis functions will be calculated
 
-def srtmb_asl(tac, dt, inputf1, w, r1):
-    b = basis.make_basis(inputf1, dt, beta_lim=[10e-6, 10e-1], n_beta=128, w=w)
+def srtmb_asl(tac, dt, inputf1, beta_lim, n_beta, w, r1):
+    b = basis.make_basis(inputf1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w)
     n_beta = b['beta'].size
     ssq = np.zeros(n_beta)
 
@@ -91,6 +92,7 @@ def srtmb_asl(tac, dt, inputf1, w, r1):
 
 # srtmb_k2p_basis - srtm model for img with fixed k2p and pre-calculated basis functions
 
+
 def srtmb_k2p_basis(tac, b):
     n_beta = b['beta'].size
     ssq = np.zeros(n_beta)
@@ -115,8 +117,8 @@ def srtmb_k2p_basis(tac, b):
 # srtmb_k2p - srtm model for tac with fixed k2p, basis functions will be calculated
 
 
-def srtmb_k2p(tac, dt, inputf1, w, k2p):
-    b = basis.make_basis(inputf1, dt, beta_lim=[10e-6, 10e-1], n_beta=128, w=w, k2p=k2p)
+def srtmb_k2p(tac, dt, inputf1, beta_lim, n_beta, w, k2p):
+    b = basis.make_basis(inputf1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w, k2p=k2p)
     kps = srtmb_k2p_basis(tac, b)
     return kps
 
@@ -283,9 +285,9 @@ def srtm_fun(inputf1_dt, r1, k2, bp):
 
 
 def srtm_para2tac(r1, k2, bp, inputf1_dt):
-    tac = srtm_fun(inputf1_dt, r1, k2, bp)
-    return tac
-
+    tacf = srtm_fun(inputf1_dt, r1, k2, bp)
+    kps = {'tacf': tacf}
+    return kps
 
 def srtm_fun_w(inputf1_dt_w, r1, k2, bp):
     inputf1, dt, w = inputf1_dt_w
@@ -306,10 +308,11 @@ def srtm(tac, dt, inputf1, w):
     k2 = p[1]
     bp = p[2]
     tacf = srtm_fun(inputf1_dt, r1, k2, bp)
-    kps = {'r1':r1, 'k2':k2, 'bp':bp, 'tacf':tacf}
+    kps = {'r1': r1, 'k2': k2, 'bp': bp, 'tacf': tacf}
     return kps
 
 # srtm_k2p - srtm model for tac with fixed k2p, with non-linear optimisation
+
 
 def srtm_fun_k2p(inputf1_dt_k2p, theta_0, theta_2):
     inputf1, dt, k2p = inputf1_dt_k2p
