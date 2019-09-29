@@ -5,6 +5,8 @@ __contact__ = 'jieqing.jiao@gmail.com'
 from niftypad.tac import TAC, Ref
 from niftypad.kt import *
 from niftypad.models import get_model_inputs
+from niftypad import basis
+
 
 # test data
 dt = np.array([[0, 15, 30, 45, 60, 90, 120, 150, 180, 210, 240, 270, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840,
@@ -33,6 +35,10 @@ ref = Ref(ref, dt)
 ref.interp_1()
 w = dt2tdur(tac.dt)
 w = w / np.amax(w)
+beta_lim = [0.0100000/60, 0.300000/60]
+n_beta = 40
+b = basis.make_basis(ref.inputf1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w)
+
 
 # provide all user inputs in one dict here and later 'get_model_inputs' will select the needed ones
 user_inputs = {'dt': dt,
@@ -40,12 +46,15 @@ user_inputs = {'dt': dt,
                'w': w,
                'r1': 0.905,
                'k2p': 0.00025,
+               'beta_lim': beta_lim,
+               'n_beta': n_beta,
+               'b': b,
                'linear_phase_start': 500,
                'linear_phase_end': None,
                'fig': True
                }
 
-models = ['srtm', 'srtmb', 'srtmb_asl', 'srtmb_k2p', 'logan_ref', 'logan_ref_k2p', 'mrtm', 'mrtm_k2p']
+models = ['srtm', 'srtmb', 'srtmb_basis', 'srtmb_asl', 'srtmb_k2p', 'logan_ref', 'logan_ref_k2p', 'mrtm', 'mrtm_k2p']
 
 for model_name in models:
     model_inputs = get_model_inputs(user_inputs, model_name)
