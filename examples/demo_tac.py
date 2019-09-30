@@ -1,10 +1,12 @@
 __author__ = 'jieqing jiao'
 __contact__ = 'jieqing.jiao@gmail.com'
 
-import numpy as np
-import matplotlib.pyplot as plt
+
 from niftypad.tac import TAC, Ref
 from niftypad.kt import *
+from niftypad.models import get_model_inputs
+from niftypad import basis
+
 
 # test data
 dt = np.array([[0, 15, 30, 45, 60, 90, 120, 150, 180, 210, 240, 270, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840,
@@ -27,53 +29,37 @@ tac = np.array(
      14.2137260024906, 13.7598553636470, 12.9989332998008, 11.8293518915139, 10.3648913297944, 8.93110113265639,
      7.50503727314817, 6.49229487908344, 5.83027369667342, 5.35683342894270, 4.94744092837665, 4.79454967790696,
      4.49907835991146])
-     
 
 tac = TAC(tac, dt)
 ref = Ref(ref, dt)
+ref.interp_1()
 w = dt2tdur(tac.dt)
 w = w / np.amax(w)
-
-ref.interp_1()
-
-tac.run_srtm(ref.inputf1, w)
-print("model name: ", tac.model)
-print("R1 = ", tac.r1)
-print("k2 = ", tac.k2)
-print("BP = ", tac.bp)
-print(tac.k2/tac.r1)
-
-tac.run_srtmb(ref.inputf1, w)
-print("model name: ", tac.model)
-print("R1 = ", tac.r1)
-print("k2 = ", tac.k2)
-print("BP = ", tac.bp)
-print(tac.k2/tac.r1)
+beta_lim = [0.0100000/60, 0.300000/60]
+n_beta = 40
+b = basis.make_basis(ref.inputf1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w)
 
 
-tac.run_srtmb_asl(ref.inputf1, w, r1=0.905)
-print("model name: ", tac.model)
-print("R1 = ", tac.r1)
-print("k2 = ", tac.k2)
-print("BP = ", tac.bp)
-print(tac.k2/tac.r1)
+# provide all user inputs in one dict here and later 'get_model_inputs' will select the needed ones
+user_inputs = {'dt': dt,
+               'inputf1': ref.inputf1,
+               'w': w,
+               'r1': 0.905,
+               'k2p': 0.00025,
+               'beta_lim': beta_lim,
+               'n_beta': n_beta,
+               'b': b,
+               'linear_phase_start': 500,
+               'linear_phase_end': None,
+               'fig': True
+               }
+
+models = ['srtm', 'srtmb', 'srtmb_basis', 'srtmb_asl', 'srtmb_k2p', 'logan_ref', 'logan_ref_k2p', 'mrtm', 'mrtm_k2p']
+
+for model_name in models:
+    model_inputs = get_model_inputs(user_inputs, model_name)
+    tac.run_model(model_name, model_inputs)
+    print(tac.km_results[-1])
 
 
-tac.run_srtmb_k2p(ref.inputf1, w, k2p=0.00025)
-print("model name: ", tac.model)
-print("R1 = ", tac.r1)
-print("k2 = ", tac.k2)
-print("BP = ", tac.bp)
-
-
-tac.run_srtm_k2p(ref.inputf1, w, k2p=0.00025)
-print("model name: ", tac.model)
-print("R1 = ", tac.r1)
-print("k2 = ", tac.k2)
-print("BP = ", tac.bp)
-
-
-tac.run_logan_ref_k2p(ref.inputf1, k2p=0.00025, linear_phase_start=50, linear_phase_end=None)
-print("model name: ", tac.model)
-print("BP = ", tac.bp)
 
