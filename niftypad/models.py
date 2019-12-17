@@ -2,6 +2,7 @@ __author__ = 'jieqing jiao'
 __email__ = "jieqing.jiao@gmail.com"
 
 import numpy as np
+import scipy
 from scipy.optimize import curve_fit
 from scipy.stats import linregress
 from sklearn.linear_model import LinearRegression
@@ -303,7 +304,7 @@ def srtm(tac, dt, inputf1, w):
     inputf1_dt_w = inputf1, dt, w
     if w is None:
         w = 1
-    p, _ = curve_fit(srtm_fun_w, inputf1_dt_w, tac*w, p0=(1, 0.001, 0.5), bounds=(0, [3, 1, 10]))
+    p, _ = curve_fit(srtm_fun_w, inputf1_dt_w, tac*w, p0=(1, 0.001, 0.50), bounds=(0, [3, 1, 10]))
     r1 = p[0]
     k2 = p[1]
     bp = p[2]
@@ -348,9 +349,69 @@ def srtm_k2p(tac, dt, inputf1, w, k2p):
     kps = {'r1': r1, 'k2': k2, 'bp': bp, 'tacf': tacf}
     return kps
 
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # #  model for ref input
 # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+def exp_1_fun_t(t, a0, a1, b1):
+    cr = a0 + a1 * np.exp(-b1 * t)
+    return cr
+
+
+def exp_1_fun(ts_te_w, a0, a1, b1):
+    ts, te, w = ts_te_w
+    if w is None:
+        w = 1
+    cr_dt_fun = a0 * (te - ts) - (a1 * (np.exp(-b1 * te) - np.exp(-b1 * ts)))/b1
+    return cr_dt_fun*w
+
+
+def exp_1(tac, dt, idx, w, fig):
+    if w is None:
+        w = np.ones_like(tac)
+    ts_te_w = (dt[0, idx], dt[1, idx], w[idx])
+    p0 = (1, 1, 0)
+    p, _ = curve_fit(exp_1_fun, ts_te_w, tac[idx]*w[idx], p0)
+    a0, a1, b1 = p
+    t1 = np.arange(np.amax(dt))
+    tac1f = exp_1_fun_t(t1, a0, a1, b1)
+    if fig:
+        print(p)
+        mft = kt.dt2mft(dt)
+        plt.plot(t1, tac1f, 'b', mft, tac, 'go')
+        plt.show()
+    return tac1f, p
+
+
+def exp_2_fun_t(t, a0, a1, a2, b1, b2):
+    cr = a0 + a1 * np.exp(-b1 * t) + a2 * np.exp(-b2 * t)
+    return cr
+
+
+def exp_2_fun(ts_te_w, a0, a1, a2, b1, b2):
+    ts, te, w = ts_te_w
+    if w is None:
+        w = 1
+    cr_dt_fun = a0 * (te - ts) - (a1 * (np.exp(-b1 * te) - np.exp(-b1 * ts)))/b1 - (a2 * (np.exp(-b2 * te)
+                                                                                          - np.exp(-b2 * ts)))/b2
+    return cr_dt_fun*w
+
+
+def exp_2(tac, dt, idx, w, fig):
+    if w is None:
+        w = np.ones_like(tac)
+    ts_te_w = (dt[0, idx], dt[1, idx], w[idx])
+    p0 = (1, 1, 1, 0, 0)
+    p, _ = curve_fit(exp_2_fun, ts_te_w, tac[idx]*w[idx], p0)
+    a0, a1, a2, b1, b2 = p
+    t1 = np.arange(np.amax(dt))
+    tac1f = exp_2_fun_t(t1, a0, a1, a2, b1, b2)
+    if fig:
+        print(p)
+        mft = kt.dt2mft(dt)
+        plt.plot(t1, tac1f, 'b', mft, tac, 'go')
+        plt.show()
+    return tac1f, p
 
 
 def feng_srtm_fun(ts_te_w, a0, a1, a2, a3, b0, b1, b2, b3):
@@ -406,7 +467,7 @@ def feng_srtm_fun_t(t, a0, a1, a2, a3, b0, b1, b2, b3):
 
 def feng_srtm(tac, dt, w, fig):
     ts_te_w = (dt[0, ], dt[1, ], w)
-    p0 = (3.90671734e+00, 4.34910151e+02, 9.22189828e+01, 1.35949657e-02, 4.56109635e-02, 4.53841116e-02, 4.54180443e-02, 7.71163349e-04)
+    p0 = [3.90671734e+00, 4.34910151e+02, 9.22189828e+01, 1.35949657e-02, 4.56109635e-02, 4.53841116e-02, 4.54180443e-02, 7.71163349e-04]
     p, _ = curve_fit(feng_srtm_fun, ts_te_w, tac*w, p0)
     a0, a1, a2, a3, b0, b1, b2, b3 = p
     t1 = np.arange(np.amax(dt))
@@ -418,6 +479,7 @@ def feng_srtm(tac, dt, w, fig):
         plt.plot(t1, cp1f, 'r', t1, tac1f, 'b', mft, tac, 'go')
         plt.show()
     return tac1f, p
+
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # #
