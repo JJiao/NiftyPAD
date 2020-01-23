@@ -127,7 +127,8 @@ def srtmb_k2p(tac, dt, inputf1, beta_lim, n_beta, w, k2p):
 # "Distribution Volume Ratios Without Blood Sampling from Graphical Analysis of PET Data"
 
 
-def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
+def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, 
+              fig, fig_name):
     if linear_phase_start is None:
         linear_phase_start = 0
     if linear_phase_end is None:
@@ -156,6 +157,8 @@ def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     if fig:
         plt.plot(xx, yy, '.')
         plt.plot(xx[tt], yyf[tt], 'r')
+        if fig_name is not None:
+            plt.savefig(fig_name)
         plt.show()
     kps = {'bp': bp}
     return kps
@@ -163,7 +166,8 @@ def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
 
 # logan_ref_k2p - logan reference plot with fixed k2p for tac
 
-def logan_ref_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
+def logan_ref_k2p(tac, dt, inputf1, k2p, 
+                  linear_phase_start, linear_phase_end, fig, fig_name):
     if linear_phase_start is None:
         linear_phase_start = 0
     if linear_phase_end is None:
@@ -192,6 +196,8 @@ def logan_ref_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, f
     if fig:
         plt.plot(xx, yy, '.')
         plt.plot(xx[tt], yyf[tt], 'r')
+        if fig_name is not None:
+            plt.savefig(fig_name)
         plt.show()
     kps = {'bp': bp}
     return kps
@@ -199,7 +205,8 @@ def logan_ref_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, f
 
 # mrtm - Ichise's multilinear reference tissue model
 
-def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
+def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end, 
+         fig, fig_name):
     if linear_phase_start is None:
         linear_phase_start = 0
     if linear_phase_end is None:
@@ -230,6 +237,8 @@ def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     if fig:
         plt.plot(mft, yy, '.')
         plt.plot(mft, yyf, 'r')
+        if fig_name is not None:
+            plt.savefig(fig_name)
         plt.show()
     kps = {'bp': bp, 'k2p': k2p, 'r1': r1, 'k2': k2}
     return kps
@@ -237,7 +246,8 @@ def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
 
 # mrtm - Ichise's multilinear reference tissue model with fixed k2prime
 
-def mrtm_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
+def mrtm_k2p(tac, dt, inputf1, k2p, 
+             linear_phase_start, linear_phase_end, fig, fig_name):
     if linear_phase_start is None:
         linear_phase_start = 0
     if linear_phase_end is None:
@@ -264,6 +274,8 @@ def mrtm_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
     if fig:
         plt.plot(mft, yy, '.')
         plt.plot(mft, yyf, 'r')
+        if fig_name is not None:
+            plt.savefig(fig_name)
         plt.show()
     kps = {'bp': bp}
     return kps
