@@ -155,6 +155,7 @@ def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end,
     bp = dvr - 1
     yyf = dvr * xx + inter
     if fig:
+        plt.cla()
         plt.plot(xx, yy, '.')
         plt.plot(xx[tt], yyf[tt], 'r')
         if fig_name is not None:
@@ -194,6 +195,7 @@ def logan_ref_k2p(tac, dt, inputf1, k2p,
     bp = dvr - 1
     yyf = dvr * xx + inter
     if fig:
+        plt.cla()
         plt.plot(xx, yy, '.')
         plt.plot(xx[tt], yyf[tt], 'r')
         if fig_name is not None:
@@ -235,6 +237,7 @@ def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end,
     k2 = - reg.coef_[1]
     yyf = reg.predict(xx)
     if fig:
+        plt.cla()
         plt.plot(mft, yy, '.')
         plt.plot(mft, yyf, 'r')
         if fig_name is not None:
@@ -272,6 +275,7 @@ def mrtm_k2p(tac, dt, inputf1, k2p,
     bp = - reg.coef_[0]/reg.coef_[1] - 1
     yyf = reg.predict(xx)
     if fig:
+        plt.cla()
         plt.plot(mft, yy, '.')
         plt.plot(mft, yyf, 'r')
         if fig_name is not None:
