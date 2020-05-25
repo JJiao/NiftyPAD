@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 
 def image_to_parametric(pet_image, dt, model_name, model_inputs, km_outputs, thr=0.005):
     parametric_images = []
+    tac = TAC(pet_image[0, 0, 0, ]*0+1, dt)
+    tac.run_model(model_name, model_inputs)
+    km_outputs = list(set([c.lower() for c in km_outputs]) & set(list(tac.km_results.keys())))
     for p in range(len(km_outputs)):
         parametric_images.append(np.zeros(pet_image.shape[0:3]))
     pet_image_fit = np.zeros(pet_image.shape)
@@ -17,12 +20,15 @@ def image_to_parametric(pet_image, dt, model_name, model_inputs, km_outputs, thr
         print(str(i) + '/' + str(mask.shape[0]))
         tac = TAC(pet_image[mask[i][0], mask[i][1], mask[i][2], ], dt)
         tac.run_model(model_name, model_inputs)
-        # #
-        plt.plot(tac.mft, tac.km_results['tacf'],'r', tac.mft, tac.tac, 'go')
-        plt.show()
-        # #
-        pet_image_fit[mask[i][0], mask[i][1], mask[i][2], ] = tac.km_results['tacf']
-        print(tac.km_results)
+        # # #
+        # plt.plot(tac.mft, tac.km_results['tacf'],'r', tac.mft, tac.tac, 'go')
+        # plt.show()
+        # # #
+        if 'tacf' in tac.km_results:
+            pet_image_fit[mask[i][0], mask[i][1], mask[i][2], ] = tac.km_results['tacf']
+        # # #
+        # print(tac.km_results)
+        # # #
         for p in range(len(km_outputs)):
             parametric_images[p][mask[i][0], mask[i][1], mask[i][2], ] = tac.km_results[km_outputs[p].lower()]
     parametric_images_dict = dict(zip(km_outputs, parametric_images))
@@ -41,5 +47,5 @@ def parametric_to_image(parametric_images_dict, dt, model, km_inputs):
         # TODO
         getattr(tac, 'run_' + model + '_para2tac')(**km_inputs_local)
         #
-        pet_image[mask[i][0], mask[i][1], mask[i][2], ] = tac.tacf
+        pet_image[mask[i][0], mask[i][1], mask[i][2], ] = tac.km_results['tacf']
     return pet_image

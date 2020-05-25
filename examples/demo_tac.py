@@ -59,7 +59,7 @@ models = ['srtm', 'srtmb', 'srtmb_basis', 'srtmb_asl', 'srtmb_k2p', 'logan_ref',
 for model_name in models:
     model_inputs = get_model_inputs(user_inputs, model_name)
     tac.run_model(model_name, model_inputs)
-    print(tac.km_results[-1])
+    print(tac.km_results)
 
 
 
