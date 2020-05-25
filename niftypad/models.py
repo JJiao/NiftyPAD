@@ -6,6 +6,8 @@ import scipy
 from scipy.optimize import curve_fit
 from scipy.stats import linregress
 from sklearn.linear_model import LinearRegression
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import inspect
 
@@ -304,7 +306,7 @@ def srtm(tac, dt, inputf1, w):
     inputf1_dt_w = inputf1, dt, w
     if w is None:
         w = 1
-    p, _ = curve_fit(srtm_fun_w, inputf1_dt_w, tac*w, p0=(1, 0.001, 0.50), bounds=(0, [3, 1, 10]))
+    p, _ = curve_fit(srtm_fun_w, inputf1_dt_w, tac*w, p0=[1, 0.001, 0.50], bounds=(0, [3, 1, 10]))
     r1 = p[0]
     k2 = p[1]
     bp = p[2]
@@ -370,7 +372,7 @@ def exp_1(tac, dt, idx, w, fig):
     if w is None:
         w = np.ones_like(tac)
     ts_te_w = (dt[0, idx], dt[1, idx], w[idx])
-    p0 = (1, 1, 0)
+    p0 = (1000, 5000, 10)
     p, _ = curve_fit(exp_1_fun, ts_te_w, tac[idx]*w[idx], p0)
     a0, a1, b1 = p
     t1 = np.arange(np.amax(dt))
