@@ -46,7 +46,7 @@ class Ref:
         self.inputf1cubic = kt.interpt1cubic(mft, self.tac, self.dt)
 
     def run_exp1(self, w=None, idx_to_fit=None, fill_in_seconds=None):
-        self.interp_1(self)
+        self.interp_1()
         self.inputf1_exp1 = self.inputf1
         if idx_to_fit is not None:
             inputf1_exp1, _ = models.exp_1(self.tac, self.dt, idx=idx_to_fit, w=w, fig=True)
