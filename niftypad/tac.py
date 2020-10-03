@@ -54,7 +54,7 @@ class Ref:
             self.inputf1_exp1[fill_in_seconds] = inputf1_exp1[fill_in_seconds]
 
     def run_exp2(self, w=None, idx_to_fit=None, fill_in_seconds=None):
-        self.interp_1(self)
+        self.interp_1()
         self.inputf1_exp1 = self.inputf1
         if idx_to_fit is not None:
             inputf1_exp2, _ = models.exp_2(self.tac, self.dt, idx=idx_to_fit, w=w, fig=True)
