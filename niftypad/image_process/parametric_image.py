@@ -3,6 +3,7 @@ __contact__ = 'jieqing.jiao@gmail.com'
 
 import numpy as np
 from niftypad.tac import TAC
+from .regions import extract_regional_values
 import matplotlib.pyplot as plt
 
 
@@ -49,3 +50,12 @@ def parametric_to_image(parametric_images_dict, dt, model, km_inputs):
         #
         pet_image[mask[i][0], mask[i][1], mask[i][2], ] = tac.km_results['tacf']
     return pet_image
+
+
+def image_to_suvr(pet_image, parcellation, reference_region_labels, selected_frame_index):
+    reference_regional_tac = extract_regional_values(pet_image, parcellation, reference_region_labels)
+    reference_regional_value = reference_regional_tac[selected_frame_index]
+    image_suvr = np.mean(pet_image[:, :, :, selected_frame_index], axis=-1) / np.mean(reference_regional_value)
+    return image_suvr
+
+
