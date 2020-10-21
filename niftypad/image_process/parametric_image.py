@@ -52,8 +52,14 @@ def parametric_to_image(parametric_images_dict, dt, model, km_inputs):
     return pet_image
 
 
-def image_to_suvr(pet_image, parcellation, reference_region_labels, selected_frame_index):
+def image_to_suvr_with_parcellation(pet_image, parcellation, reference_region_labels, selected_frame_index):
     reference_regional_tac = extract_regional_values(pet_image, parcellation, reference_region_labels)
+    reference_regional_value = reference_regional_tac[selected_frame_index]
+    image_suvr = np.mean(pet_image[:, :, :, selected_frame_index], axis=-1) / np.mean(reference_regional_value)
+    return image_suvr
+
+
+def image_to_suvr_with_reference_tac(pet_image, reference_regional_tac, selected_frame_index):
     reference_regional_value = reference_regional_tac[selected_frame_index]
     image_suvr = np.mean(pet_image[:, :, :, selected_frame_index], axis=-1) / np.mean(reference_regional_value)
     return image_suvr
