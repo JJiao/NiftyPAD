@@ -50,6 +50,21 @@ def tdur2mft(tdur):
     mft = dt2mft(dt)
     return mft
 
+
+def dt_fill_gaps(dt):
+    unique, counts = np.unique(dt, return_counts=True)
+    gap_ends = unique[counts == 1]
+    if len(gap_ends) > 2:
+        gap_ends = gap_ends[1:-1]
+        gap_starts_index = range(0, len(gap_ends), 2)
+        for i in gap_starts_index:
+            print(gap_ends[i:i+2])
+            dt_gap = np.unique(np.floor(np.linspace(gap_ends[i], gap_ends[i+1], 10))).astype('int16')
+            tdur_to_insert = np.diff(dt_gap)
+            dt_to_insert = tdur2dt(tdur_to_insert) + gap_ends[i]
+            dt = np.insert(dt, np.where(dt[1, ] == gap_ends[i])[0]+1, dt_to_insert, axis=-1)
+    return dt
+
 # # # #
 
 
