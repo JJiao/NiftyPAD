@@ -3,6 +3,7 @@ __contact__ = 'jieqing.jiao@gmail.com'
 
 import numpy as np
 from niftypad.tac import TAC
+from niftypad.kt import dt2tdur
 from .regions import extract_regional_values
 import matplotlib.pyplot as plt
 
@@ -45,23 +46,22 @@ def parametric_to_image(parametric_images_dict, dt, model, km_inputs):
         for p in parametric_images_dict.keys():
             km_inputs_local.update({p.lower(): parametric_images_dict[p][mask[i][0], mask[i][1], mask[i][2]]})
         tac = TAC([], dt)
-        # TODO
         getattr(tac, 'run_' + model + '_para2tac')(**km_inputs_local)
-        #
         pet_image[mask[i][0], mask[i][1], mask[i][2], ] = tac.km_results['tacf']
     return pet_image
 
 
-def image_to_suvr_with_parcellation(pet_image, parcellation, reference_region_labels, selected_frame_index):
+def image_to_suvr_with_parcellation(pet_image, dt, parcellation, reference_region_labels, selected_frame_index):
     reference_regional_tac = extract_regional_values(pet_image, parcellation, reference_region_labels)
-    reference_regional_value = reference_regional_tac[selected_frame_index]
-    image_suvr = np.mean(pet_image[:, :, :, selected_frame_index], axis=-1) / np.mean(reference_regional_value)
+    image_suvr = image_to_suvr_with_reference_tac(pet_image, dt, reference_regional_tac, selected_frame_index)
     return image_suvr
 
 
-def image_to_suvr_with_reference_tac(pet_image, reference_regional_tac, selected_frame_index):
-    reference_regional_value = reference_regional_tac[selected_frame_index]
-    image_suvr = np.mean(pet_image[:, :, :, selected_frame_index], axis=-1) / np.mean(reference_regional_value)
+def image_to_suvr_with_reference_tac(pet_image, dt, reference_regional_tac, selected_frame_index):
+    tdur = dt2tdur(dt)
+    image = np.multiply(pet_image[:, :, :, selected_frame_index], tdur[selected_frame_index])
+    ref = np.multiply(reference_regional_tac[selected_frame_index], tdur[selected_frame_index])
+    image_suvr = np.sum(image, axis=-1)/np.sum(ref)
     return image_suvr
 
 
