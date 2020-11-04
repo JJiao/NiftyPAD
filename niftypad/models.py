@@ -57,17 +57,6 @@ def srtmb_basis_para2tac(r1, k2, bp, b):
     return kps
 
 
-def srtmb_k2p_basis_para2tac(r1, k2, bp, b):
-    tacf = []
-    theta = kp.srtm_kp2theta(r1, k2, bp)
-    i = np.argwhere(abs(b['beta'] - theta[-1]) < 1e-10).squeeze()
-    if not i == []:
-        a = np.column_stack((b['input'], b['basis_k2p'][i, :]))
-        tacf = np.dot(a, theta[:-1])
-    kps = {'tacf': tacf}
-    return kps
-
-
 # srtmb - srtm model for tac, basis functions will be calculated
 
 def srtmb(tac, dt, inputf1, beta_lim, n_beta, w):
@@ -128,6 +117,16 @@ def srtmb_k2p_basis(tac, b):
     kps = {'r1': r1, 'k2': k2, 'bp': bp, 'tacf': tacf}
     return kps
 
+
+def srtmb_k2p_basis_para2tac(r1, k2, bp, b):
+    tacf = []
+    theta = kp.srtm_kp2theta(r1, k2, bp)
+    i = np.argwhere(abs(b['beta'] - theta[-1]) < 1e-10).squeeze()
+    if not i == []:
+        tacf = theta[0] * b['basis_k2p'][i]
+    kps = {'tacf': tacf}
+    return kps
+
 # srtmb_k2p - srtm model for tac with fixed k2p, basis functions will be calculated
 
 
@@ -135,6 +134,8 @@ def srtmb_k2p(tac, dt, inputf1, beta_lim, n_beta, w, k2p):
     b = basis.make_basis(inputf1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w, k2p=k2p)
     kps = srtmb_k2p_basis(tac, b)
     return kps
+
+
 
 # logan_ref - logan reference plot without fixed k2p for tac, based on eq.7 in
 # "Distribution Volume Ratios Without Blood Sampling from Graphical Analysis of PET Data"
