@@ -136,21 +136,22 @@ def srtmb_k2p(tac, dt, inputf1, beta_lim, n_beta, w, k2p):
     return kps
 
 
-
 # logan_ref - logan reference plot without fixed k2p for tac, based on eq.7 in
 # "Distribution Volume Ratios Without Blood Sampling from Graphical Analysis of PET Data"
-
 
 def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     if linear_phase_start is None:
         linear_phase_start = 0
     if linear_phase_end is None:
         linear_phase_end = np.amax(dt)
+    # fill the coffee break gap
+    if kt.dt_has_gaps(dt):
+        tac, dt = kt.tac_dt_fill_coffee_break(tac, dt)
     mft = kt.dt2mft(dt)
     mft = np.append(0, mft)
     dt_new = np.array([mft[:-1], mft[1:]])
     tdur = kt.dt2tdur(dt_new)
-    input_dt = kt.int2dt(inputf1,dt)
+    input_dt = kt.int2dt(inputf1, dt)
     tac = np.append(0, tac)
     input_dt = np.append(0, input_dt)
     tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
@@ -182,6 +183,9 @@ def logan_ref_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, f
         linear_phase_start = 0
     if linear_phase_end is None:
         linear_phase_end = np.amax(dt)
+    # fill the coffee break gap
+    if kt.dt_has_gaps(dt):
+        tac, dt = kt.tac_dt_fill_coffee_break(tac, dt)
     mft = kt.dt2mft(dt)
     mft = np.append(0, mft)
     dt_new = np.array([mft[:-1], mft[1:]])
@@ -218,6 +222,9 @@ def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
         linear_phase_start = 0
     if linear_phase_end is None:
         linear_phase_end = np.amax(dt)
+    # fill the coffee break gap
+    if kt.dt_has_gaps(dt):
+        tac, dt = kt.tac_dt_fill_coffee_break(tac, dt)
     mft = kt.dt2mft(dt)
     mft = np.append(0, mft)
     dt_new = np.array([mft[:-1], mft[1:]])
@@ -256,6 +263,9 @@ def mrtm_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
         linear_phase_start = 0
     if linear_phase_end is None:
         linear_phase_end = np.amax(dt)
+    # fill the coffee break gap
+    if kt.dt_has_gaps(dt):
+        tac, dt = kt.tac_dt_fill_coffee_break(tac, dt)
     mft = kt.dt2mft(dt)
     mft = np.append(0, mft)
     dt_new = np.array([mft[:-1], mft[1:]])
@@ -430,8 +440,9 @@ def exp_2(tac, dt, idx, w, fig):
 
 def exp_am(tac, dt, idx, fig):
     mft = kt.dt2mft(dt)
-    p0 = (1, 1, 1)
-    p, _ = curve_fit(exp_1_fun_t, mft[idx], tac[idx], p0=p0, bounds=(0.00000001, 250))
+    p0 = (0.1, 1, 0.1)
+    # p, _ = curve_fit(exp_1_fun_t, mft[idx], tac[idx], p0=p0, bounds=(0.00000001, 2500))
+    p, _ = curve_fit(exp_1_fun_t, mft[idx], tac[idx], p0=p0)
     a0, a1, b1 = p
     t1 = np.arange(np.amax(dt))
     tac1f = exp_1_fun_t(t1, a0, a1, b1)
