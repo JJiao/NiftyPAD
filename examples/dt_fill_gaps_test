@@ -62,5 +62,3 @@ for model_name in models:
     plt.plot(dt2mft(dt_fill_gaps), tac.km_results['tacf'], 'r', label='fit')
     plt.legend()
     plt.show()
-
-

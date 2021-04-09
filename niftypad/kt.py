@@ -1,9 +1,9 @@
 __author__ = 'jieqing jiao'
 __email__ = "jieqing.jiao@gmail.com"
 
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
-import matplotlib.pyplot as plt
 
 
 def dt2mft(dt):
@@ -12,7 +12,7 @@ def dt2mft(dt):
 
 
 def dt2tdur(dt):
-    tdur = dt[1, ] - dt[0, ]
+    tdur = dt[1,] - dt[0,]
     return tdur
 
 
@@ -32,7 +32,7 @@ def tdur2dt(tdur):
     st[0] = 0
     et[0] = tdur[0]
     for i in range(1, len(tdur)):
-        st[i] = et[i-1]
+        st[i] = et[i - 1]
         et[i] = st[i] + tdur[i]
     dt = [st, et]
     return dt
@@ -69,10 +69,11 @@ def dt_fill_gaps(dt):
         gap_starts_index = range(0, len(gap_ends), 2)
         for i in gap_starts_index:
             # print(gap_ends[i:i+2])
-            dt_gap = np.unique(np.floor(np.linspace(gap_ends[i], gap_ends[i+1], 10))).astype('int16')
+            dt_gap = np.unique(np.floor(np.linspace(gap_ends[i], gap_ends[i + 1],
+                                                    10))).astype('int16')
             tdur_to_insert = np.diff(dt_gap)
             dt_to_insert = tdur2dt(tdur_to_insert) + gap_ends[i]
-            dt = np.insert(dt, np.where(dt[1, ] == gap_ends[i])[0]+1, dt_to_insert, axis=-1)
+            dt = np.insert(dt, np.where(dt[1,] == gap_ends[i])[0] + 1, dt_to_insert, axis=-1)
     return dt
 
 
@@ -87,6 +88,8 @@ def tac_dt_fill_coffee_break(tac, dt, fig=False):
         plt.plot(dt2mft(dt_no_gaps), tac_no_gaps, 'r')
         plt.show()
     return tac_no_gaps, dt_no_gaps
+
+
 # # # #
 
 
@@ -96,7 +99,7 @@ def int2dt(f1, dt):
     tdur = dt2tdur(dt)
     f = np.zeros(tdur.size)
     for j in range(0, tdur.size):
-        f[j] = np.sum(f1[dt[0, j]:dt[1, j]])/tdur[j]
+        f[j] = np.sum(f1[dt[0, j]:dt[1, j]]) / tdur[j]
     return f
 
 

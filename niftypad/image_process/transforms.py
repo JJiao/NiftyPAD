@@ -1,11 +1,12 @@
 __author__ = 'jieqing jiao'
 __email__ = "jieqing.jiao@gmail.com"
 
-import numpy as np
 from math import cos, sin
-from scipy.interpolate import interpn
+
+import numpy as np
 import numpy.matlib
 from numpy.linalg import solve
+from scipy.interpolate import interpn
 
 
 def rigid_p2matrix(translation, rotation):
@@ -83,29 +84,36 @@ def d_coordinates_over_d_transform(xv, yv, zv, translation, rotation, centre):
     ones = np.ones(xv.size)
 
     dx_over_dp = np.column_stack(
-        (ones * 1, ones * 0, ones * 0, ones * 0, 
-         cos(p5)*zv - c3*cos(p5) - yv*sin(p5)*sin(p6) + c1*cos(p6)*sin(p5) + c2*sin(p5)*sin(p6) - cos(p6)*xv*sin(p5),
-         c1*cos(p5)*sin(p6) - c2*cos(p5)*cos(p6) + cos(p5)*cos(p6)*yv - cos(p5)*xv*sin(p6)))
+        (ones * 1, ones * 0, ones * 0, ones * 0,
+         cos(p5) * zv - c3 * cos(p5) - yv * sin(p5) * sin(p6) + c1 * cos(p6) * sin(p5) +
+         c2 * sin(p5) * sin(p6) - cos(p6) * xv * sin(p5), c1 * cos(p5) * sin(p6) -
+         c2 * cos(p5) * cos(p6) + cos(p5) * cos(p6) * yv - cos(p5) * xv * sin(p6)))
 
     dy_over_dp = np.column_stack(
-        (ones * 0, ones * 1, ones * 0,
-         c2 * (cos(p6) * sin(p4) + cos(p4) * sin(p5) * sin(p6)) - c1 * (sin(p4) * sin(p6) - cos(p4) * cos(p6) * sin(p5))
-         + xv * (sin(p4) * sin(p6) - cos(p4) * cos(p6) * sin(p5)) - yv * (cos(p6) * sin(p4) + cos(p4) * sin(p5) * sin(p6))
-         - c3 * cos(p4) * cos(p5) + cos(p4) * cos(p5) * zv,
-         c3 * sin(p4) * sin(p5) - zv * sin(p4) * sin(p5) + c1 * cos(p5) * cos(p6) * sin(p4)
-         + c2 * cos(p5) * sin(p4) * sin(p6) - cos(p5) * cos(p6) * xv * sin(p4) - cos(p5) * yv * sin(p4) * sin(p6),
-         c1 * (cos(p4) * cos(p6) - sin(p4) * sin(p5) * sin(p6)) + c2 * (cos(p4) * sin(p6) + cos(p6) * sin(p4) * sin(p5))
-         - xv * (cos(p4) * cos(p6) - sin(p4) * sin(p5) * sin(p6)) - yv * (cos(p4) * sin(p6) + cos(p6) * sin(p4) * sin(p5))))
+        (ones * 0, ones * 1, ones * 0, c2 * (cos(p6) * sin(p4) + cos(p4) * sin(p5) * sin(p6)) -
+         c1 * (sin(p4) * sin(p6) - cos(p4) * cos(p6) * sin(p5)) + xv *
+         (sin(p4) * sin(p6) - cos(p4) * cos(p6) * sin(p5)) - yv *
+         (cos(p6) * sin(p4) + cos(p4) * sin(p5) * sin(p6)) - c3 * cos(p4) * cos(p5) +
+         cos(p4) * cos(p5) * zv, c3 * sin(p4) * sin(p5) - zv * sin(p4) * sin(p5) +
+         c1 * cos(p5) * cos(p6) * sin(p4) + c2 * cos(p5) * sin(p4) * sin(p6) -
+         cos(p5) * cos(p6) * xv * sin(p4) - cos(p5) * yv * sin(p4) * sin(p6),
+         c1 * (cos(p4) * cos(p6) - sin(p4) * sin(p5) * sin(p6)) + c2 *
+         (cos(p4) * sin(p6) + cos(p6) * sin(p4) * sin(p5)) - xv *
+         (cos(p4) * cos(p6) - sin(p4) * sin(p5) * sin(p6)) - yv *
+         (cos(p4) * sin(p6) + cos(p6) * sin(p4) * sin(p5))))
 
     dz_over_dp = np.column_stack(
-        (ones * 0, ones * 0, ones * 1,
-         c2 * (cos(p4) * cos(p6) - sin(p4) * sin(p5) * sin(p6)) - c1 * (cos(p4) * sin(p6) + cos(p6) * sin(p4) * sin(p5))
-         + xv * (cos(p4) * sin(p6) + cos(p6) * sin(p4) * sin(p5)) - yv * (cos(p4) * cos(p6) - sin(p4) * sin(p5) * sin(p6))
-         + c3 * cos(p5) * sin(p4) - cos(p5) * zv * sin(p4),
-         c3 * cos(p4) * sin(p5) - cos(p4) * zv * sin(p5) + c1 * cos(p4) * cos(p5) * cos(p6) + c2 * cos(p4) * cos(p5) * sin(p6)
-         - cos(p4) * cos(p5) * cos(p6) * xv - cos(p4) * cos(p5) * yv * sin(p6),
-         xv * (cos(p6) * sin(p4) + cos(p4) * sin(p5) * sin(p6)) - c2 * (sin(p4) * sin(p6) - cos(p4) * cos(p6) * sin(p5))
-         - c1 * (cos(p6) * sin(p4) + cos(p4) * sin(p5) * sin(p6)) + yv * (sin(p4) * sin(p6) - cos(p4) * cos(p6) * sin(p5))))
+        (ones * 0, ones * 0, ones * 1, c2 * (cos(p4) * cos(p6) - sin(p4) * sin(p5) * sin(p6)) -
+         c1 * (cos(p4) * sin(p6) + cos(p6) * sin(p4) * sin(p5)) + xv *
+         (cos(p4) * sin(p6) + cos(p6) * sin(p4) * sin(p5)) - yv *
+         (cos(p4) * cos(p6) - sin(p4) * sin(p5) * sin(p6)) + c3 * cos(p5) * sin(p4) -
+         cos(p5) * zv * sin(p4), c3 * cos(p4) * sin(p5) - cos(p4) * zv * sin(p5) +
+         c1 * cos(p4) * cos(p5) * cos(p6) + c2 * cos(p4) * cos(p5) * sin(p6) -
+         cos(p4) * cos(p5) * cos(p6) * xv - cos(p4) * cos(p5) * yv * sin(p6),
+         xv * (cos(p6) * sin(p4) + cos(p4) * sin(p5) * sin(p6)) - c2 *
+         (sin(p4) * sin(p6) - cos(p4) * cos(p6) * sin(p5)) - c1 *
+         (cos(p6) * sin(p4) + cos(p4) * sin(p5) * sin(p6)) + yv *
+         (sin(p4) * sin(p6) - cos(p4) * cos(p6) * sin(p5))))
 
     return dx_over_dp, dy_over_dp, dz_over_dp
 
@@ -118,7 +126,8 @@ def image_rigid_transform_3d(image, translation, rotation):
     centre = [xv.mean(), yv.mean(), zv.mean()]
     xv_new, yv_new, zv_new = affine_transform_centre(xv, yv, zv, translation, rotation, centre)
     image_new = interpn((x_range, y_range, z_range), image,
-                        np.vstack((xv_new.flatten(), yv_new.flatten(), zv_new.flatten())).transpose(),
+                        np.vstack(
+                            (xv_new.flatten(), yv_new.flatten(), zv_new.flatten())).transpose(),
                         bounds_error=False)
     image_new = image_new.reshape(image.shape)
     return image_new
@@ -142,18 +151,23 @@ def image_registration_3d_gn(image, image_ref, translation, rotation, n_iter=100
     for i in range(n_iter):
         print(i)
         xv_new, yv_new, zv_new = affine_transform_centre(xv, yv, zv, translation, rotation, centre)
-        image_new = interpn((x_range, y_range, z_range), image,
-                            np.vstack((xv_new.flatten(), yv_new.flatten(), zv_new.flatten())).transpose(),
-                            bounds_error=False)
+        image_new = interpn(
+            (x_range, y_range, z_range), image,
+            np.vstack((xv_new.flatten(), yv_new.flatten(), zv_new.flatten())).transpose(),
+            bounds_error=False)
         image_new = image_new.reshape(image.shape)
-        dx_over_dp, dy_over_dp, dz_over_dp = d_coordinates_over_d_transform(xv, yv, zv, translation, rotation, centre)
+        dx_over_dp, dy_over_dp, dz_over_dp = d_coordinates_over_d_transform(
+            xv, yv, zv, translation, rotation, centre)
         image_new_g = image_new * 1
         image_new_g[np.isnan(image_new)] = 0
         image_gradient = np.gradient(image_new_g)
-        image_gradient_x = np.matlib.repmat(image_gradient[0].flatten(), dx_over_dp.shape[-1], 1).transpose()
-        image_gradient_y = np.matlib.repmat(image_gradient[1].flatten(), dy_over_dp.shape[-1], 1).transpose()
-        image_gradient_z = np.matlib.repmat(image_gradient[2].flatten(), dz_over_dp.shape[-1], 1).transpose()
-        jacobian = image_gradient_x * dx_over_dp + image_gradient_y * dy_over_dp + image_gradient_z * dz_over_dp
+        image_gradient_x = np.matlib.repmat(image_gradient[0].flatten(), dx_over_dp.shape[-1],
+                                            1).transpose()
+        image_gradient_y = np.matlib.repmat(image_gradient[1].flatten(), dy_over_dp.shape[-1],
+                                            1).transpose()
+        image_gradient_z = np.matlib.repmat(image_gradient[2].flatten(), dz_over_dp.shape[-1],
+                                            1).transpose()
+        jacobian = image_gradient_x*dx_over_dp + image_gradient_y*dy_over_dp + image_gradient_z*dz_over_dp
         image_diff = image_new - image_ref
         image_diff[np.isnan(image_diff)] = 0
         a = jacobian.transpose() @ jacobian
@@ -167,11 +181,11 @@ def image_registration_3d_gn(image, image_ref, translation, rotation, n_iter=100
     return translation, rotation, image_new_g
 
 
-def image_registration_3d_plus_t(image_t, image_ref_t, translation_t, rotation_t, registration_index, n_iter=100):
+def image_registration_3d_plus_t(image_t, image_ref_t, translation_t, rotation_t,
+                                 registration_index, n_iter=100):
     image_new_t = image_t * 1
     for t in registration_index:
         translation_t[t], rotation_t[t], image_new_t[:, :, :, t] = \
             image_registration_3d_gn(image_t[:, :, :, t], image_ref_t[:, :, :, t],
                                      translation=translation_t[t], rotation=rotation_t[t], n_iter=n_iter)
     return translation_t, rotation_t, image_new_t
-

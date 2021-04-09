@@ -1,13 +1,13 @@
 __author__ = 'jieqing jiao'
 __email__ = "jieqing.jiao@gmail.com"
 
-import numpy as np
 import nibabel as nib
+import numpy as np
 
 
 def extract_regional_values(image, parcellation, labels):
     idx = labels_to_index(parcellation, labels)
-    regional_values = np.mean(image[idx, ], axis=0)
+    regional_values = np.mean(image[idx,], axis=0)
     return regional_values
 
 
@@ -33,8 +33,3 @@ def extract_regional_values_image_file(image_file, parcellation_file):
     for i in range(regions_label.size):
         regions_data[i] = extract_regional_values(image_data, parcellation, [regions_label[i]])
     return regions_data, regions_label
-
-
-
-
-

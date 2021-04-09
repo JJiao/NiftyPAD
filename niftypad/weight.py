@@ -3,8 +3,9 @@ __email__ = "jieqing.jiao@gmail.com"
 
 # weighting scheme implementation based on https://www.ncbi.nlm.nih.gov/pubmed/16912378
 
-from niftypad import kt
 import numpy as np
+
+from . import kt
 
 
 def get_weight(dt, isotope='18F', a=1, t=None, r=None, tac=None):
@@ -16,9 +17,9 @@ def get_weight(dt, isotope='18F', a=1, t=None, r=None, tac=None):
     else:
         print('not known yet')
 
-    decay_const = np.log(2)/half_life
+    decay_const = np.log(2) / half_life
     tdur = kt.dt2tdur(dt)
-    dcf = decay_const * tdur/(np.exp(-decay_const * dt[0, ])-np.exp(-decay_const * dt[1, ]))
+    dcf = decay_const * tdur / (np.exp(-decay_const * dt[0,]) - np.exp(-decay_const * dt[1,]))
 
     n_model = 5
     w_m = [None] * n_model
@@ -34,6 +35,6 @@ def get_weight(dt, isotope='18F', a=1, t=None, r=None, tac=None):
     w_m[i] = a * tac * tdur * dcf
 
     for i in range(n_model):
-        w_m[i] = 1/w_m[i]
+        w_m[i] = 1 / w_m[i]
 
     return w_m

@@ -1,12 +1,10 @@
 __author__ = 'jieqing jiao'
 __email__ = "jieqing.jiao@gmail.com"
 
-from . import models
-from . import kt
+from . import kt, models
 
 
 class TAC:
-
     def __init__(self, tac, dt):
         self.tac = tac
         self.dt = dt
@@ -32,7 +30,6 @@ class TAC:
 
 
 class Ref:
-
     def __init__(self, tac, dt):
         self.tac = tac
         self.dt = dt
