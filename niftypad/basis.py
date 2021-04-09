@@ -6,8 +6,10 @@ import numpy as np
 from . import kt
 
 
-def make_basis(inputf1, dt, beta_lim=[10e-6, 10e-1], n_beta=128, beta_space='log', w=None,
-               k2p=None, fig=False):
+def make_basis(inputf1, dt, beta_lim=None, n_beta=128, beta_space='log', w=None, k2p=None,
+               fig=False):
+    if beta_lim is None:
+        beta_lim = [10e-6, 10e-1]
 
     # dt can skip frames if needed
 
@@ -22,9 +24,9 @@ def make_basis(inputf1, dt, beta_lim=[10e-6, 10e-1], n_beta=128, beta_space='log
     elif beta_space == 'natural':
         beta = np.zeros(n_beta)
         for i in range(0, n_beta):
-            beta[i] = - 1 / t1[-1] * \
-                      np.log((np.exp(-beta_lim[0]*t1[-1]) - np.exp(-beta_lim[1]*t1[-1])) / n_beta * i +
-                             np.exp(-beta_lim[1]*t1[-1]))
+            beta[i] = -1 / t1[-1] * np.log(
+                (np.exp(-beta_lim[0] * t1[-1]) - np.exp(-beta_lim[1] * t1[-1])) / n_beta * i +
+                np.exp(-beta_lim[1] * t1[-1]))
     basis = np.zeros((beta.size, tdur.size))
     basis_w = np.zeros((beta.size, tdur.size))
     m = np.zeros((beta.size * 2, tdur.size))

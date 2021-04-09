@@ -1,17 +1,13 @@
 __author__ = 'jieqing jiao'
 __email__ = "jieqing.jiao@gmail.com"
 
-import matplotlib
-import numpy as np
-import scipy
-from scipy.optimize import curve_fit
-from scipy.stats import linregress
-from sklearn.linear_model import LinearRegression
-
-matplotlib.use('TkAgg')
 import inspect
 
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.optimize import curve_fit
+from scipy.stats import linregress
+from sklearn.linear_model import LinearRegression
 
 from . import basis, kp, kt
 
@@ -562,12 +558,12 @@ def feng_srtm(tac, dt, w, fig):
 
 def get_model_inputs(user_inputs, model_name):
     sig = inspect.signature(globals()[model_name])
-    model_inputs = dict()
+    model_inputs = {}
     for p in sig.parameters.values():
         n = p.name
         d = p.default
         if d == inspect.Parameter.empty:
             d = None
-        if user_inputs.get(n, 0) is not 0:
+        if user_inputs.get(n, 0) != 0:
             model_inputs.update({n: user_inputs.get(n)})
     return model_inputs

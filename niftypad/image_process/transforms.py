@@ -68,19 +68,13 @@ def affine_transform_centre(xv, yv, zv, translation, rotation, centre, order='T*
     return xv_new, yv_new, zv_new
 
 
-def d_coordinates_over_d_transform(xv, yv, zv, translation, rotation, centre):
+def d_coordinates_over_d_transform(xv, yv, zv, _, rotation, centre):
     xv = xv.flatten()
     yv = yv.flatten()
     zv = zv.flatten()
-    p1 = translation[0]
-    p2 = translation[1]
-    p3 = translation[2]
-    p4 = rotation[0]
-    p5 = rotation[1]
-    p6 = rotation[2]
-    c1 = centre[0]
-    c2 = centre[1]
-    c3 = centre[2]
+    # p1, p2, p3 = _[:3]  # TODO: check _ == translation is unneeded
+    p4, p5, p6 = rotation[:3]
+    c1, c2, c3 = centre[:3]
     ones = np.ones(xv.size)
 
     dx_over_dp = np.column_stack(
@@ -167,7 +161,8 @@ def image_registration_3d_gn(image, image_ref, translation, rotation, n_iter=100
                                             1).transpose()
         image_gradient_z = np.matlib.repmat(image_gradient[2].flatten(), dz_over_dp.shape[-1],
                                             1).transpose()
-        jacobian = image_gradient_x*dx_over_dp + image_gradient_y*dy_over_dp + image_gradient_z*dz_over_dp
+        jacobian = (image_gradient_x*dx_over_dp + image_gradient_y*dy_over_dp +
+                    image_gradient_z*dz_over_dp)
         image_diff = image_new - image_ref
         image_diff[np.isnan(image_diff)] = 0
         a = jacobian.transpose() @ jacobian
@@ -186,6 +181,7 @@ def image_registration_3d_plus_t(image_t, image_ref_t, translation_t, rotation_t
     image_new_t = image_t * 1
     for t in registration_index:
         translation_t[t], rotation_t[t], image_new_t[:, :, :, t] = \
-            image_registration_3d_gn(image_t[:, :, :, t], image_ref_t[:, :, :, t],
-                                     translation=translation_t[t], rotation=rotation_t[t], n_iter=n_iter)
+            image_registration_3d_gn(
+                image_t[:, :, :, t], image_ref_t[:, :, :, t],
+                translation=translation_t[t], rotation=rotation_t[t], n_iter=n_iter)
     return translation_t, rotation_t, image_new_t

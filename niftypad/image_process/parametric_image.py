@@ -1,7 +1,6 @@
 __author__ = 'jieqing jiao'
 __contact__ = 'jieqing.jiao@gmail.com'
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 from ..kt import dt2tdur
@@ -13,8 +12,8 @@ def image_to_parametric(pet_image, dt, model_name, model_inputs, km_outputs, thr
     parametric_images = []
     tac = TAC(pet_image[0, 0, 0,] * 0 + 1, dt)
     tac.run_model(model_name, model_inputs)
-    km_outputs = list(set([c.lower() for c in km_outputs]) & set(list(tac.km_results.keys())))
-    for p in range(len(km_outputs)):
+    km_outputs = list({c.lower() for c in km_outputs} & set(tac.km_results.keys()))
+    for _ in range(len(km_outputs)):
         parametric_images.append(np.zeros(pet_image.shape[0:3]))
     pet_image_fit = np.zeros(pet_image.shape)
     thr = thr * np.amax(pet_image)

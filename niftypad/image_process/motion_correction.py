@@ -20,8 +20,8 @@ def kinetic_model_motion_correction(pet_image, dt, model, km_inputs_initial, km_
     for ii in range(n_iteration):
         print('iteration ' + str(ii + 1))
         print('updating motion ...')
-        translation_t, rotation_t, pet_image_realigned = \
-            image_registration_3d_plus_t(pet_image, pet_image_fit, translation_t, rotation_t, motion_correction_index)
+        translation_t, rotation_t, pet_image_realigned = image_registration_3d_plus_t(
+            pet_image, pet_image_fit, translation_t, rotation_t, motion_correction_index)
         print('updating kinetics ...')
         parametric_images_dict, pet_image_fit = image_to_parametric(pet_image_realigned, dt, model,
                                                                     km_inputs, km_outputs)
@@ -36,9 +36,9 @@ def kinetic_model_motion_correction_file(pet_file, dt, model, km_inputs_initial,
     # pet_img_data[pet_img_data < 0] = 0
     pet_img_data[:, :, 0:1, :] = 0
     pet_image_realigned, translation_t, rotation_t, parametric_images_dict = \
-        kinetic_model_motion_correction(pet_img_data, dt, model, km_inputs_initial, km_inputs, km_outputs,
-                                        initial_fit_index, motion_correction_index, n_iteration,
-                                        translation_t, rotation_t)
+        kinetic_model_motion_correction(
+            pet_img_data, dt, model, km_inputs_initial, km_inputs, km_outputs, initial_fit_index,
+            motion_correction_index, n_iteration, translation_t, rotation_t)
     if save_file:
         parametric_images_dict.update({'mc': pet_image_realigned})
         for kk in parametric_images_dict.keys():

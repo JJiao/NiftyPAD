@@ -13,16 +13,14 @@ class TAC:
         self.km_results = []
 
     def run_model(self, model_name, model_inputs):
-        km_results = dict()
-        km_results.update({'model_name': model_name})
+        km_results = {'model_name': model_name}
         model = getattr(models, model_name)
         kps = model(self.tac, **model_inputs)
         km_results.update(kps)
         self.km_results = km_results
 
     def run_model_para2tac(self, model_name, model_inputs):
-        km_results = dict()
-        km_results.update({'model_name': model_name})
+        km_results = {'model_name': model_name}
         model = getattr(models, model_name)
         kps = model(**model_inputs)
         km_results.update(kps)

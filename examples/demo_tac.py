@@ -1,8 +1,10 @@
 __author__ = 'jieqing jiao'
 __contact__ = 'jieqing.jiao@gmail.com'
 
+import numpy as np
+
 from niftypad import basis
-from niftypad.kt import *
+from niftypad.kt import dt2tdur
 from niftypad.models import get_model_inputs
 from niftypad.tac import TAC, Ref
 
