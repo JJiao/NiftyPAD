@@ -68,11 +68,10 @@ def affine_transform_centre(xv, yv, zv, translation, rotation, centre, order='T*
     return xv_new, yv_new, zv_new
 
 
-def d_coordinates_over_d_transform(xv, yv, zv, _, rotation, centre):
+def d_coordinates_over_d_transform(xv, yv, zv, rotation, centre):
     xv = xv.flatten()
     yv = yv.flatten()
     zv = zv.flatten()
-    # p1, p2, p3 = _[:3]  # TODO: check _ == translation is unneeded
     p4, p5, p6 = rotation[:3]
     c1, c2, c3 = centre[:3]
     ones = np.ones(xv.size)
@@ -151,7 +150,7 @@ def image_registration_3d_gn(image, image_ref, translation, rotation, n_iter=100
             bounds_error=False)
         image_new = image_new.reshape(image.shape)
         dx_over_dp, dy_over_dp, dz_over_dp = d_coordinates_over_d_transform(
-            xv, yv, zv, translation, rotation, centre)
+            xv, yv, zv, rotation, centre)
         image_new_g = image_new * 1
         image_new_g[np.isnan(image_new)] = 0
         image_gradient = np.gradient(image_new_g)
