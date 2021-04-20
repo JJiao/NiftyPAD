@@ -102,7 +102,7 @@ def srtmb_asl_basis(tac, b, r1):
 
     if b['w'] is None:
         b['w'] = 1
-    y = tac - r1*b['input']
+    y = tac - r1 * b['input']
     for i in range(0,n_beta):
         theta = r1
         theta = np.append(theta, np.dot(y, b['basis'][i, :])/np.dot(b['basis'][i, :], b['basis'][i, :]))  # w won't make a difference here
