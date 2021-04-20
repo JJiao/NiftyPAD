@@ -542,9 +542,7 @@ def get_model_inputs(user_inputs, model_name):
     model_inputs = {}
     for p in sig.parameters.values():
         n = p.name
-        d = p.default
-        if d == inspect.Parameter.empty:
-            d = None
-        if user_inputs.get(n, 0) != 0:
-            model_inputs.update({n: user_inputs.get(n)})
+        # d = None if p.default == inspect.Parameter.empty else p.default
+        if n in user_inputs:
+            model_inputs[n] = user_inputs[n]
     return model_inputs
