@@ -94,7 +94,7 @@ def srtmb_asl(tac, dt, inputf1, beta_lim, n_beta, w, r1):
     return kps
 
 
-# srtmb_asl_basis - srtm model for tac with fixed R1, basis functions will be calculated
+# srtmb_asl_basis - srtm model for tac with fixed R1 and pre-calculated basis functions
 
 def srtmb_asl_basis(tac, b, r1):
     n_beta = b['beta'].size

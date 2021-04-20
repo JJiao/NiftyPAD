@@ -24,15 +24,18 @@ ref = Ref(cer_GM, dt)
 ref.interp_1cubic()
 
 # img file
-file_path = ''
+file_path = '/Users/Himiko/data/amsterdam_data/'
 pet_file = file_path + 'E301_FLUT_AC1_combined_ID_cleared.nii'
 img = nib.load(pet_file)
 pet_image = img.get_data()
 
+# k2p
+k2p = 0.000250
+
 # basis functions
 beta_lim = [0.0100000/60, 0.300000/60]
 n_beta = 40
-b = basis.make_basis(ref.inputf1cubic, dt, beta_lim=beta_lim, n_beta=n_beta, w=None)
+b = basis.make_basis(ref.inputf1cubic, dt, beta_lim=beta_lim, n_beta=n_beta, w=None, k2p=k2p)
 
 
 # provide all user inputs in one dict here and later 'get_model_inputs' will select the needed ones
@@ -40,7 +43,7 @@ user_inputs = {'dt': dt,
                'inputf1': ref.inputf1cubic,
                'w': None,
                'r1': 0.905,
-               'k2p': 0.00025,
+               'k2p': k2p,
                'beta_lim': beta_lim,
                'n_beta': n_beta,
                'b': b,
@@ -50,7 +53,7 @@ user_inputs = {'dt': dt,
                }
 
 # model
-models = ['srtm', 'srtmb', 'srtmb_basis', 'srtmb_asl', 'srtmb_k2p', 'logan_ref', 'logan_ref_k2p', 'mrtm', 'mrtm_k2p']
+models = ['srtmb_basis', 'srtmb_k2p_basis', 'srtmb_asl_basis', 'logan_ref', 'logan_ref_k2p', 'mrtm', 'mrtm_k2p']
 km_outputs = ['R1', 'k2', 'BP']
 
 
@@ -58,7 +61,7 @@ for model_name in models:
     print(model_name)
     model_inputs = get_model_inputs(user_inputs, model_name)
     parametric_images_dict, pet_image_fit = image_to_parametric(pet_image, dt, model_name, model_inputs, km_outputs,
-                                                                thr=0.01)
+                                                                thr=0.1)
     for kp in parametric_images_dict.keys():
         nib.save(nib.Nifti1Image(parametric_images_dict[kp], img.affine), os.path.splitext(img.get_filename())[0] +
                  '_' + model_name + '_' + kp + os.path.splitext(img.get_filename())[1])
