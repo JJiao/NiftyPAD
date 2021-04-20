@@ -36,8 +36,25 @@ jobs:
         REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         EVENT: ${{ github.event_name }}
     - run: pre-commit run -a --show-diff-on-failure
+  test:
+    if: github.event_name != 'pull_request' || github.head_ref != 'devel'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: [3.6, 3.9]
+    name: Test py${{ matrix.python }}
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python }}
+    - run: pip install -U .[dev]
+    - run: pytest
+    - run: codecov
   deploy:
-    needs: [check]
+    needs: [check, test]
     name: PyPI Deploy
     runs-on: ubuntu-latest
     steps:
