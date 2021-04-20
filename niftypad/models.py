@@ -65,35 +65,6 @@ def srtmb(tac, dt, inputf1, beta_lim, n_beta, w):
     return kps
 
 
-# srtmb_asl - srtm model for tac with fixed R1, basis functions will be calculated
-
-def srtmb_asl(tac, dt, inputf1, beta_lim, n_beta, w, r1):
-    b = basis.make_basis(inputf1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w)
-    n_beta = b['beta'].size
-    ssq = np.zeros(n_beta)
-
-    if b['w'] is None:
-        b['w'] = 1
-    y = tac - r1*b['input']
-    for i in range(0,n_beta):
-        theta = r1
-        theta = np.append(theta, np.dot(y, b['basis'][i, :])/np.dot(b['basis'][i, :], b['basis'][i, :]))  # w won't make a difference here
-        a = np.column_stack((b['input'], b['basis'][i, :]))
-        tacf = np.dot(a, theta)
-        res = (tac - tacf) * b['w'] # w works here
-        ssq[i] = np.sum(res ** 2)
-    i = np.argmin(ssq)
-    theta = r1
-    theta = np.append(theta, np.dot(y, b['basis'][i, :]) / np.dot(b['basis'][i, :], b['basis'][i, :]))
-    a = np.column_stack((b['input'], b['basis'][i, :]))
-    tacf = np.dot(a, theta)
-
-    theta = np.append(theta, b['beta'][i])
-    r1, k2, bp = kp.srtm_theta2kp(theta)
-    kps = {'r1': r1, 'k2': k2, 'bp': bp, 'tacf': tacf}
-    return kps
-
-
 # srtmb_asl_basis - srtm model for tac with fixed R1 and pre-calculated basis functions
 
 def srtmb_asl_basis(tac, b, r1):
@@ -119,6 +90,13 @@ def srtmb_asl_basis(tac, b, r1):
     theta = np.append(theta, b['beta'][i])
     r1, k2, bp = kp.srtm_theta2kp(theta)
     kps = {'r1': r1, 'k2': k2, 'bp': bp, 'tacf': tacf}
+    return kps
+
+# srtmb_asl - srtm model for tac with fixed R1, basis functions will be calculated
+
+def srtmb_asl(tac, dt, inputf1, beta_lim, n_beta, w, r1):
+    b = basis.make_basis(inputf1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w)
+    kps = srtmb_asl_basis(tac, b, r1)
     return kps
 
 # srtmb_k2p_basis - srtm model for img with fixed k2p and pre-calculated basis functions
