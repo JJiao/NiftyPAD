@@ -15,10 +15,9 @@ from . import basis, kp, kt
 # # linear models
 # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-# srtmb_basis - srtm model for img with pre-calculated basis functions
-
 
 def srtmb_basis(tac, b):
+    """srtm model for img with pre-calculated basis functions"""
     n_beta = b['beta'].size
     ssq = np.zeros(n_beta)
 
@@ -53,19 +52,14 @@ def srtmb_basis_para2tac(r1, k2, bp, b):
     return kps
 
 
-# srtmb - srtm model for tac, basis functions will be calculated
-
-
 def srtmb(tac, dt, inputf1, beta_lim, n_beta, w):
+    """srtm model for tac, basis functions will be calculated"""
     b = basis.make_basis(inputf1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w)
-    kps = srtmb_basis(tac, b)
-    return kps
-
-
-# srtmb_asl - srtm model for tac with fixed R1, basis functions will be calculated
+    return srtmb_basis(tac, b)
 
 
 def srtmb_asl(tac, dt, inputf1, beta_lim, n_beta, w, r1):
+    """srtm model for tac with fixed R1, basis functions will be calculated"""
     b = basis.make_basis(inputf1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w)
     n_beta = b['beta'].size
     ssq = np.zeros(n_beta)
@@ -96,10 +90,8 @@ def srtmb_asl(tac, dt, inputf1, beta_lim, n_beta, w, r1):
     return kps
 
 
-# srtmb_k2p_basis - srtm model for img with fixed k2p and pre-calculated basis functions
-
-
 def srtmb_k2p_basis(tac, b):
+    """srtm model for img with fixed k2p and pre-calculated basis functions"""
     n_beta = b['beta'].size
     ssq = np.zeros(n_beta)
 
@@ -131,20 +123,18 @@ def srtmb_k2p_basis_para2tac(r1, k2, bp, b):
     return kps
 
 
-# srtmb_k2p - srtm model for tac with fixed k2p, basis functions will be calculated
-
-
 def srtmb_k2p(tac, dt, inputf1, beta_lim, n_beta, w, k2p):
+    """srtm model for tac with fixed k2p, basis functions will be calculated"""
     b = basis.make_basis(inputf1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w, k2p=k2p)
     kps = srtmb_k2p_basis(tac, b)
     return kps
 
 
-# logan_ref - logan reference plot without fixed k2p for tac, based on eq.7 in
-# "Distribution Volume Ratios Without Blood Sampling from Graphical Analysis of PET Data"
-
-
 def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
+    """
+    logan reference plot without fixed k2p for tac, based on eq.7 in
+    "Distribution Volume Ratios Without Blood Sampling from Graphical Analysis of PET Data"
+    """
     if linear_phase_start is None:
         linear_phase_start = 0
     if linear_phase_end is None:
@@ -181,10 +171,8 @@ def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     return kps
 
 
-# logan_ref_k2p - logan reference plot with fixed k2p for tac
-
-
 def logan_ref_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
+    """logan reference plot with fixed k2p for tac"""
     if linear_phase_start is None:
         linear_phase_start = 0
     if linear_phase_end is None:
@@ -221,10 +209,8 @@ def logan_ref_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, f
     return kps
 
 
-# mrtm - Ichise's multilinear reference tissue model
-
-
 def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
+    """Ichise's multilinear reference tissue model"""
     if linear_phase_start is None:
         linear_phase_start = 0
     if linear_phase_end is None:
@@ -263,10 +249,8 @@ def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     return kps
 
 
-# mrtm - Ichise's multilinear reference tissue model with fixed k2prime
-
-
 def mrtm_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
+    """Ichise's multilinear reference tissue model with fixed k2prime"""
     if linear_phase_start is None:
         linear_phase_start = 0
     if linear_phase_end is None:
@@ -305,10 +289,9 @@ def mrtm_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
 # # non-linear models
 # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-# srtm - srtm model for tac, with non-linear optimisation
-
 
 def srtm_fun(inputf1_dt, r1, k2, bp):
+    """srtm model for tac, with non-linear optimisation"""
     inputf1, dt = inputf1_dt
     t1 = np.arange(np.amax(dt))
     theta = kp.srtm_kp2theta(r1, k2, bp)
@@ -348,10 +331,8 @@ def srtm(tac, dt, inputf1, w):
     return kps
 
 
-# srtm_k2p - srtm model for tac with fixed k2p, with non-linear optimisation
-
-
 def srtm_fun_k2p(inputf1_dt_k2p, theta_0, theta_2):
+    """srtm model for tac with fixed k2p, with non-linear optimisation"""
     inputf1, dt, k2p = inputf1_dt_k2p
     inputf1_dt = (inputf1, dt)
     theta_1 = theta_0 * (k2p-theta_2)

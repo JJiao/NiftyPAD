@@ -2,6 +2,7 @@ __author__ = 'jieqing jiao'
 __contact__ = 'jieqing.jiao@gmail.com'
 
 import numpy as np
+from tqdm import trange
 
 from ..kt import dt2tdur
 from ..tac import TAC
@@ -18,8 +19,7 @@ def image_to_parametric(pet_image, dt, model_name, model_inputs, km_outputs, thr
     pet_image_fit = np.zeros(pet_image.shape)
     thr = thr * np.amax(pet_image)
     mask = np.argwhere(np.mean(pet_image, axis=-1) > thr)
-    for i in range(mask.shape[0]):
-        print(str(i) + '/' + str(mask.shape[0]))
+    for i in trange(mask.shape[0]):
         tac = TAC(pet_image[mask[i][0], mask[i][1], mask[i][2],], dt)
         tac.run_model(model_name, model_inputs)
         # # #
