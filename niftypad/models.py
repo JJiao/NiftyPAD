@@ -93,6 +93,34 @@ def srtmb_asl(tac, dt, inputf1, beta_lim, n_beta, w, r1):
     kps = {'r1': r1, 'k2': k2, 'bp': bp, 'tacf': tacf}
     return kps
 
+
+# srtmb_asl_basis - srtm model for tac with fixed R1, basis functions will be calculated
+
+def srtmb_asl_basis(tac, b, r1):
+    n_beta = b['beta'].size
+    ssq = np.zeros(n_beta)
+
+    if b['w'] is None:
+        b['w'] = 1
+    y = tac - r1*b['input']
+    for i in range(0,n_beta):
+        theta = r1
+        theta = np.append(theta, np.dot(y, b['basis'][i, :])/np.dot(b['basis'][i, :], b['basis'][i, :]))  # w won't make a difference here
+        a = np.column_stack((b['input'], b['basis'][i, :]))
+        tacf = np.dot(a, theta)
+        res = (tac - tacf) * b['w'] # w works here
+        ssq[i] = np.sum(res ** 2)
+    i = np.argmin(ssq)
+    theta = r1
+    theta = np.append(theta, np.dot(y, b['basis'][i, :]) / np.dot(b['basis'][i, :], b['basis'][i, :]))
+    a = np.column_stack((b['input'], b['basis'][i, :]))
+    tacf = np.dot(a, theta)
+
+    theta = np.append(theta, b['beta'][i])
+    r1, k2, bp = kp.srtm_theta2kp(theta)
+    kps = {'r1': r1, 'k2': k2, 'bp': bp, 'tacf': tacf}
+    return kps
+
 # srtmb_k2p_basis - srtm model for img with fixed k2p and pre-calculated basis functions
 
 
@@ -176,7 +204,8 @@ def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     return kps
 
 
-# logan_ref_k2p - logan reference plot with fixed k2p for tac
+# logan_ref_k2p - logan reference plot with fixed k2p for tac, based on eq.6 in
+# # "Distribution Volume Ratios Without Blood Sampling from Graphical Analysis of PET Data"
 
 def logan_ref_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
     if linear_phase_start is None:
@@ -498,24 +527,38 @@ def feng_fun_t(t, a0, a1, a2, b0, b1, b2):
 
 
 def feng_srtm_fun_t(t, a0, a1, a2, a3, b0, b1, b2, b3):
-    cr = a0 * a3 * (
-    -b0 * t * np.exp(b3 * t) / (b0 ** 2 * np.exp(b0 * t) - 2 * b0 * b3 * np.exp(b0 * t) + b3 ** 2 * np.exp(b0 * t)) + b3 * t * np.exp(
-        b3 * t) / (b0 ** 2 * np.exp(b0 * t) - 2 * b0 * b3 * np.exp(b0 * t) + b3 ** 2 * np.exp(b0 * t)) - np.exp(b3 * t) / (
-    b0 ** 2 * np.exp(b0 * t) - 2 * b0 * b3 * np.exp(b0 * t) + b3 ** 2 * np.exp(b0 * t))) * np.exp(-b3 * t) + a0 * a3 * np.exp(
-        -b3 * t) / (b0 ** 2 - 2 * b0 * b3 + b3 ** 2) - a1 * a3 / (b1 * np.exp(b1 * t) - b3 * np.exp(b1 * t)) + a1 * a3 / (
-    b0 * np.exp(b0 * t) - b3 * np.exp(b0 * t)) + a1 * a3 * np.exp(-b3 * t) / (b1 - b3) - a1 * a3 * np.exp(-b3 * t) / (
-    b0 - b3) - a2 * a3 / (b2 * np.exp(b2 * t) - b3 * np.exp(b2 * t)) + a2 * a3 / (
-    b0 * np.exp(b0 * t) - b3 * np.exp(b0 * t)) + a2 * a3 * np.exp(-b3 * t) / (b2 - b3) - a2 * a3 * np.exp(-b3 * t) / (b0 - b3)
+    cr1 = a0 * a3 * (-b0 * t * np.exp(b3 * t) / (b0 ** 2 * np.exp(b0 * t) - 2 * b0 * b3 * np.exp(b0 * t) + b3 ** 2 * np.exp(b0 * t))
+                     + b3 * t * np.exp(b3 * t) / (b0 ** 2 * np.exp(b0 * t) - 2 * b0 * b3 * np.exp(b0 * t) + b3 ** 2 * np.exp(b0 * t))
+                     - np.exp(b3 * t) / (b0 ** 2 * np.exp(b0 * t) - 2 * b0 * b3 * np.exp(b0 * t) + b3 ** 2 * np.exp(b0 * t))) * np.exp(-b3 * t)
+
+    cr2 = a0 * a3 * np.exp(-b3 * t) / (b0 ** 2 - 2 * b0 * b3 + b3 ** 2)
+    cr3 = - a1 * a3 / (b1 * np.exp(b1 * t) - b3 * np.exp(b1 * t))
+    cr4 = a1 * a3 / (b0 * np.exp(b0 * t) - b3 * np.exp(b0 * t))
+    cr5 = a1 * a3 * np.exp(-b3 * t) / (b1 - b3)
+    cr6 = - a1 * a3 * np.exp(-b3 * t) / (b0 - b3)
+    cr7 = - a2 * a3 / (b2 * np.exp(b2 * t) - b3 * np.exp(b2 * t))
+    cr8 = a2 * a3 / (b0 * np.exp(b0 * t) - b3 * np.exp(b0 * t))
+    cr9 = a2 * a3 * np.exp(-b3 * t) / (b2 - b3)
+    cr10 = - a2 * a3 * np.exp(-b3 * t) / (b0 - b3)
+    cr = np.stack((cr1, cr2, cr3, cr4, cr5, cr6, cr7, cr8, cr9, cr10))
+    cr[np.isinf(cr)] = 0
+    cr[np.isnan(cr)] = 0
+    cr = np.sum(cr, axis=0)
     return cr
 
 
 def feng_srtm(tac, dt, w, fig):
+    if w is None:
+        w = 1
     ts_te_w = (dt[0, ], dt[1, ], w)
-    p0 = [3.90671734e+00, 4.34910151e+02, 9.22189828e+01, 1.35949657e-02, 4.56109635e-02, 4.53841116e-02, 4.54180443e-02, 7.71163349e-04]
-    p, _ = curve_fit(feng_srtm_fun, ts_te_w, tac*w, p0)
+    # p0 = [3.90671734e+00, 4.34910151e+02, 9.22189828e+01, 1.35949657e-02, 4.56109635e-02, 4.53841116e-02, 4.54180443e-02, 7.71163349e-04]
+    p0 = [1, 2, 3, 4, 0.1, 0.2, 0.3, 0.4]
+    # p0 = [6.85579165e-05, -2.08643110e+01, -1.81889002e+02, 7.16906660e+00, 4.21217390e-04, 7.23514957e-02, 7.84986975e-02, 8.27340347e-02]
+    p, _ = curve_fit(feng_srtm_fun, ts_te_w, tac*w, p0=p0)
     a0, a1, a2, a3, b0, b1, b2, b3 = p
     t1 = np.arange(np.amax(dt))
     tac1f = feng_srtm_fun_t(t1, a0, a1, a2, a3, b0, b1, b2, b3)
+    print(tac1f)
     if fig:
         print(p)
         cp1f = feng_fun_t(t1, a0, a1, a2, b0, b1, b2)
