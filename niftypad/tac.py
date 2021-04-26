@@ -36,6 +36,7 @@ class Ref:
         self.inputf1cubic = []
         self.inputf1_exp1 = []
         self.inputf1_exp2 = []
+        self.inputf1_exp_am = []
 
     def run_feng_srtm(self, w=None):
         self.inputf1_fs, _ = models.feng_srtm(self.tac, self.dt, w=w, fig=True)
