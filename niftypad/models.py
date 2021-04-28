@@ -6,14 +6,16 @@ import scipy
 from scipy.optimize import curve_fit
 from scipy.stats import linregress
 from sklearn.linear_model import LinearRegression
-import matplotlib
-matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import inspect
 
 from niftypad import kt
 from niftypad import kp
 from niftypad import basis
+
+# # for debugging
+from numpy import savetxt
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # linear models
@@ -158,17 +160,45 @@ def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     dt_new = np.array([mft[:-1], mft[1:]])
     tdur = kt.dt2tdur(dt_new)
     input_dt = kt.int2dt(inputf1, dt)
+
     tac = np.append(0, tac)
     input_dt = np.append(0, input_dt)
+
+    # set negative values to zero
+    tac[tac < 0] = 0.0
+    input_dt[input_dt < 0] = 0.0
+
     tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
     input_cum = np.cumsum((input_dt[:-1] + input_dt[1:]) / 2 * tdur)
+    # tac_cum and input_cum are calculated in such a way to match tac
+
+# # # debug
+#     file_path = '/Users/Himiko/data/amsterdam_data_pib/transfer_162391_files_89f2cba1/'
+#     savetxt(file_path + 'tac_cum.csv', tac_cum)
+#     savetxt(file_path + 'input_cum.csv', input_cum)
+#
+#     tac1 = kt.interpt1(mft, tac, dt)
+#     input1 = kt.interpt1(mft, input_dt, dt)
+#     tac_cum1 = np.cumsum(tac1)
+#     input_cum1 = np.cumsum(input1)
+#     tac_cum1_mft = tac_cum1[mft.astype(int)]
+#     input_cum1_mft = input_cum1[mft.astype(int)]
+#     savetxt(file_path + 'tac_cum1_mft.csv', tac_cum1_mft)
+#     savetxt(file_path + 'input_cum1_mft.csv', input_cum1_mft)
+# # # debug
+
     tac = tac[1:]
     input_dt = input_dt[1:]
-    yy = np.zeros(tac.shape)
-    xx = np.zeros(tac.shape)
-    mask = tac.nonzero()
-    yy[mask] = tac_cum[mask] / tac[mask]
-    xx[mask] = input_cum[mask] / tac[mask]
+
+    # yy = np.zeros(tac.shape)
+    # xx = np.zeros(tac.shape)
+    # mask = tac.nonzero()
+    # yy[mask] = tac_cum[mask] / tac[mask]
+    # xx[mask] = input_cum[mask] / tac[mask]
+
+    yy = tac_cum / (tac + 0.00000001)  # ADDED BY MY 20210616
+    xx = input_cum / (tac + 0.00000001)  # ADDED BY MY 20210616
+
     tt = np.logical_and(mft > linear_phase_start, mft < linear_phase_end)
     tt = tt[1:]
     dvr, inter, _,  _,  _ = linregress(xx[tt], yy[tt])
@@ -200,15 +230,25 @@ def logan_ref_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, f
     input_dt = kt.int2dt(inputf1,dt)
     tac = np.append(0, tac)
     input_dt = np.append(0, input_dt)
+
+    # set negative values to zero
+    tac[tac < 0] = 0.0
+    input_dt[input_dt < 0] = 0.0
+
     tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
     input_cum = np.cumsum((input_dt[:-1] + input_dt[1:]) / 2 * tdur)
     tac = tac[1:]
     input_dt = input_dt[1:]
-    yy = np.zeros(tac.shape)
-    xx = np.zeros(tac.shape)
-    mask = tac.nonzero()
-    yy[mask] = tac_cum[mask] / tac[mask]
-    xx[mask] = (input_cum[mask] + input_dt[mask] / k2p) / tac[mask]
+
+    # yy = np.zeros(tac.shape)
+    # xx = np.zeros(tac.shape)
+    # mask = tac.nonzero()
+    # yy[mask] = tac_cum[mask] / tac[mask]
+    # xx[mask] = (input_cum[mask] + input_dt[mask] / k2p) / tac[mask]
+
+    yy = tac_cum / (tac + 0.00000001)
+    xx = (input_cum + input_dt / k2p) / (tac + 0.00000001)
+
     tt = np.logical_and(mft > linear_phase_start, mft < linear_phase_end)
     tt = tt[1:]
     dvr, inter, _,  _,  _ = linregress(xx[tt], yy[tt])
@@ -239,6 +279,11 @@ def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     input_dt = kt.int2dt(inputf1,dt)
     tac = np.append(0, tac)
     input_dt = np.append(0, input_dt)
+
+    # set negative values to zero
+    tac[tac < 0] = 0.0
+    input_dt[input_dt < 0] = 0.0
+
     tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
     input_cum = np.cumsum((input_dt[:-1] + input_dt[1:]) / 2 * tdur)
     tac = tac[1:]
@@ -284,6 +329,11 @@ def mrtm_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
     input_cum = np.cumsum((input_dt[:-1] + input_dt[1:]) / 2 * tdur)
     tac = tac[1:]
     input_dt = input_dt[1:]
+
+    # set negative values to zero
+    tac[tac < 0] = 0.0
+    input_dt[input_dt < 0] = 0.0
+
     yy = tac
     xx = np.column_stack((input_cum + 1 / k2p * input_dt, tac_cum))
     tt = np.logical_and(mft > linear_phase_start, mft < linear_phase_end)
