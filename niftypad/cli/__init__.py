@@ -8,6 +8,7 @@ Options:
   -i PATH, --input PATH  : Input file/folder
   -o PATH, --output PATH  : Output file/folder (default: input folder)
   -m MODEL, --model MODEL  : model [default: srtmb_basis]
+  -p FILE, --params FILE  : config file hint (relative to `--input`)
   --log LEVEL  : verbosity: ERROR|WARN(ING)|[default: INFO]|DEBUG
 """
 import logging
@@ -21,13 +22,14 @@ from . import readers
 log = logging.getLogger(__name__)
 
 
-def kinetic_model(src, dst=None, model='srtmb_basis', w=None, r1=0.905, k2p=0.000250,
+def kinetic_model(src, dst=None, params=None, model='srtmb_basis', w=None, r1=0.905, k2p=0.000250,
                   beta_lim=None, n_beta=40, linear_phase_start=500, linear_phase_end=None,
                   km_outputs=None, thr=0.1, fig=False):
     """
     Args:
       src (Path or str): input patient directory or filename
       dst (Path or str): output directory (default: `src` directory)
+      params (Path or str): config (relative to `src` directory)
       model (str): srtmb_basis, srtmb_k2p_basis, srtmb_asl_basis, logan_ref, logan_ref_k2p,
         mrtm, mrtm_k2p
     """
@@ -53,7 +55,7 @@ def kinetic_model(src, dst=None, model='srtmb_basis', w=None, r1=0.905, k2p=0.00
         dst_path = Path(dst)
         assert dst_path.is_dir()
 
-    meta = readers.find_meta(src_path, [fpath.stem])
+    meta = readers.find_meta(src_path, filter(None, [params, fpath.stem]))
     dt = np.asarray(meta['dt'])
     ref = np.asarray(meta['ref'])
     ref = Ref(ref, dt)
@@ -91,7 +93,7 @@ def kinetic_model(src, dst=None, model='srtmb_basis', w=None, r1=0.905, k2p=0.00
 def run(args):
     assert args.input, "Input (-i, --input) file/folder required"
     if args.cmd == 'kinetic_model':
-        return kinetic_model(args.input, model=args.model)
+        return kinetic_model(args.input, dst=args.output, model=args.model, params=args.params)
     raise NotImplementedError
 
 

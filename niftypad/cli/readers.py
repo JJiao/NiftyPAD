@@ -43,9 +43,9 @@ def find_meta(src_path, config_name_hints=None):
     if config_name_hints is None:
         config_names = CONFIG_NAMES
     else:
-        config_names = config_name_hints + CONFIG_NAMES
-    for ext in sorted(READERS):
+        config_names = list(config_name_hints) + CONFIG_NAMES
+    for ext in sorted([''] + ['.' + i for i in READERS]):
         for meta in config_names:
-            if (src_path / f'{meta}.{ext}').is_file():
-                return read_meta(src_path / f'{meta}.{ext}')
+            if (src_path / f'{meta}{ext}').is_file():
+                return read_meta(src_path / f'{meta}{ext}')
     raise IOError(errno.ENOENT, "Input metadata not found")
