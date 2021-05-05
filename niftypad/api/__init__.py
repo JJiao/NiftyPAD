@@ -1,21 +1,6 @@
-"""Usage:
-  niftypad <cmd> [options]
-
-Arguments:
-  <cmd>  : Command to run
-
-Options:
-  -i PATH, --input PATH  : Input file/folder
-  -o PATH, --output PATH  : Output file/folder (default: input folder)
-  -m MODEL, --model MODEL  : model [default: srtmb_basis]
-  -p FILE, --params FILE  : config file hint (relative to `--input`)
-  --log LEVEL  : verbosity: ERROR|WARN(ING)|[default: INFO]|DEBUG
-"""
+"""Clean API"""
 import logging
-import sys
 from pathlib import Path
-
-from argopt import argopt
 
 from . import readers
 
@@ -88,30 +73,3 @@ def kinetic_model(src, dst=None, params=None, model='srtmb_basis', w=None, r1=0.
                  f"{dst_path / fpath.stem}_{model}_{kp}_{fpath.suffix}")
     nib.save(nib.Nifti1Image(pet_image_fit, img.affine),
              f"{dst_path / fpath.stem}_{model}_fit_{fpath.suffix}")
-
-
-def run(args):
-    assert args.input, "Input (-i, --input) file/folder required"
-    if args.cmd == 'kinetic_model':
-        return kinetic_model(args.input, dst=args.output, model=args.model, params=args.params)
-    raise NotImplementedError
-
-
-def get_main_parser():
-    parser = argopt(__doc__)
-    parser._get_positional_actions()[0].choices = ['kinetic_model']
-    return parser
-
-
-def main(argv=None):
-    if argv is None:
-        argv = sys.argv[1:]
-    parser = get_main_parser()
-    args = parser.parse_args(args=argv)
-    logging.basicConfig(level=getattr(logging, args.log, logging.INFO))
-    log.debug(args)
-    return run(args) or 0
-
-
-if __name__ == "__main__":
-    main()
