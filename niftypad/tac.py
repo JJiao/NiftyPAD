@@ -36,7 +36,7 @@ class Ref:
     def __init__(self, tac, dt):
         self.tac = tac
         self.dt = dt
-        self.inputf1_fs = []
+        self.inputf1_feng_srtm = []
         self.inputf1 = []
         self.inputf1cubic = []
         self.inputf1_exp1 = []
@@ -44,7 +44,7 @@ class Ref:
         self.inputf1_exp_am = []
 
     def run_feng_srtm(self, w=None):
-        self.inputf1_fs, _ = models.feng_srtm(self.tac, self.dt, w=w, fig=True)
+        self.inputf1_feng_srtm, _ = models.feng_srtm(self.tac, self.dt, w=w, fig=True)
 
     def interp_1(self):
         mft = kt.dt2mft(self.dt)

@@ -103,7 +103,11 @@ def int2dt(f1, dt):
 def interpt1(inputt, inputf, dt):
     # interpolate function
     t1 = np.arange(np.amax(dt))
-    inputf1 = np.interp(x=t1, xp=inputt, fp=inputf, left=0)
+    if inputt[0] > t1[0]:
+        inputt = np.append(t1[0], inputt)
+        inputf = np.append(0, inputf)
+    inputff = interp1d(inputt, inputf, kind='linear', fill_value='extrapolate')
+    inputf1 = inputff(t1)
     return inputf1
 
 

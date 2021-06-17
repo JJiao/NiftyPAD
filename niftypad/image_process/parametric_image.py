@@ -4,7 +4,7 @@ __contact__ = 'jieqing.jiao@gmail.com'
 import numpy as np
 from niftypad.tac import TAC
 from niftypad.kt import dt2tdur
-from .regions import extract_regional_values
+from niftypad.image_process.regions import extract_regional_values
 import matplotlib.pyplot as plt
 
 
@@ -19,7 +19,7 @@ def image_to_parametric(pet_image, dt, model_name, model_inputs, km_outputs, thr
     thr = thr * np.amax(pet_image)
     mask = np.argwhere(np.mean(pet_image, axis=-1) > thr)
     for i in range(mask.shape[0]):
-        print(str(i) + '/' + str(mask.shape[0]))
+        # print(str(i) + '/' + str(mask.shape[0]))
         tac = TAC(pet_image[mask[i][0], mask[i][1], mask[i][2], ], dt)
         tac.run_model(model_name, model_inputs)
         # # #
@@ -34,7 +34,9 @@ def image_to_parametric(pet_image, dt, model_name, model_inputs, km_outputs, thr
         for p in range(len(km_outputs)):
             parametric_images[p][mask[i][0], mask[i][1], mask[i][2], ] = tac.km_results[km_outputs[p].lower()]
     parametric_images_dict = dict(zip(km_outputs, parametric_images))
-    return parametric_images_dict, pet_image_fit
+    if 'tacf' in tac.km_results:
+        return parametric_images_dict, pet_image_fit
+    return parametric_images_dict
 
 
 def parametric_to_image(parametric_images_dict, dt, model, km_inputs):

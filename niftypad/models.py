@@ -25,6 +25,9 @@ from numpy import savetxt
 # srtmb_basis - srtm model for img with pre-calculated basis functions
 
 def srtmb_basis(tac, b):
+
+    tac[tac < 0] = 0.0
+
     n_beta = b['beta'].size
     ssq = np.zeros(n_beta)
 
@@ -62,6 +65,7 @@ def srtmb_basis_para2tac(r1, k2, bp, b):
 # srtmb - srtm model for tac, basis functions will be calculated
 
 def srtmb(tac, dt, inputf1, beta_lim, n_beta, w):
+    tac[tac < 0] = 0.0
     b = basis.make_basis(inputf1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w)
     kps = srtmb_basis(tac, b)
     return kps
@@ -70,6 +74,8 @@ def srtmb(tac, dt, inputf1, beta_lim, n_beta, w):
 # srtmb_asl_basis - srtm model for tac with fixed R1 and pre-calculated basis functions
 
 def srtmb_asl_basis(tac, b, r1):
+    tac[tac < 0] = 0.0
+
     n_beta = b['beta'].size
     ssq = np.zeros(n_beta)
 
@@ -97,6 +103,7 @@ def srtmb_asl_basis(tac, b, r1):
 # srtmb_asl - srtm model for tac with fixed R1, basis functions will be calculated
 
 def srtmb_asl(tac, dt, inputf1, beta_lim, n_beta, w, r1):
+    tac[tac < 0] = 0.0
     b = basis.make_basis(inputf1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w)
     kps = srtmb_asl_basis(tac, b, r1)
     return kps
@@ -105,6 +112,8 @@ def srtmb_asl(tac, dt, inputf1, beta_lim, n_beta, w, r1):
 
 
 def srtmb_k2p_basis(tac, b):
+    tac[tac < 0] = 0.0
+
     n_beta = b['beta'].size
     ssq = np.zeros(n_beta)
 
@@ -139,6 +148,7 @@ def srtmb_k2p_basis_para2tac(r1, k2, bp, b):
 
 
 def srtmb_k2p(tac, dt, inputf1, beta_lim, n_beta, w, k2p):
+    tac[tac < 0] = 0.0
     b = basis.make_basis(inputf1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w, k2p=k2p)
     kps = srtmb_k2p_basis(tac, b)
     return kps
@@ -168,6 +178,7 @@ def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     tac[tac < 0] = 0.0
     input_dt[input_dt < 0] = 0.0
 
+    # calculate integration
     tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
     input_cum = np.cumsum((input_dt[:-1] + input_dt[1:]) / 2 * tdur)
     # tac_cum and input_cum are calculated in such a way to match tac
@@ -196,17 +207,29 @@ def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     # yy[mask] = tac_cum[mask] / tac[mask]
     # xx[mask] = input_cum[mask] / tac[mask]
 
-    yy = tac_cum / (tac + 0.00000001)  # ADDED BY MY 20210616
-    xx = input_cum / (tac + 0.00000001)  # ADDED BY MY 20210616
+    yy = tac_cum / (tac + 0.0000000000000001)  # ADDED BY MY 20210616
+    xx = input_cum / (tac + 0.0000000000000001)  # ADDED BY MY 20210616
 
-    tt = np.logical_and(mft > linear_phase_start, mft < linear_phase_end)
+    # find tt for the linear phase
+    tt = np.logical_and(mft >= linear_phase_start, mft <= linear_phase_end)
     tt = tt[1:]
-    dvr, inter, _,  _,  _ = linregress(xx[tt], yy[tt])
+    # select tt for tac > 0
+    tt = np.logical_and(tt, tac > 0)
+    # select tt for xx < inf, yy < inf
+    infinf = 1e10
+    tt = np.logical_and(tt, xx < infinf)
+    tt = np.logical_and(tt, yy < infinf)
+
+    # do linear regression with selected tt
+    xx = xx[tt]
+    yy = yy[tt]
+
+    dvr, inter, _,  _,  _ = linregress(xx, yy)
     bp = dvr - 1
     yyf = dvr * xx + inter
     if fig:
         plt.plot(xx, yy, '.')
-        plt.plot(xx[tt], yyf[tt], 'r')
+        plt.plot(xx, yyf, 'r')
         plt.show()
     kps = {'bp': bp}
     return kps
@@ -240,18 +263,26 @@ def logan_ref_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, f
     tac = tac[1:]
     input_dt = input_dt[1:]
 
-    # yy = np.zeros(tac.shape)
-    # xx = np.zeros(tac.shape)
-    # mask = tac.nonzero()
-    # yy[mask] = tac_cum[mask] / tac[mask]
-    # xx[mask] = (input_cum[mask] + input_dt[mask] / k2p) / tac[mask]
 
-    yy = tac_cum / (tac + 0.00000001)
-    xx = (input_cum + input_dt / k2p) / (tac + 0.00000001)
 
-    tt = np.logical_and(mft > linear_phase_start, mft < linear_phase_end)
+    yy = tac_cum / (tac + 0.0000000000000001)
+    xx = (input_cum + input_dt / k2p) / (tac + 0.0000000000000001)
+
+    # find tt for the linear phase
+    tt = np.logical_and(mft >= linear_phase_start, mft <= linear_phase_end)
     tt = tt[1:]
-    dvr, inter, _,  _,  _ = linregress(xx[tt], yy[tt])
+    # select tt for tac > 0
+    tt = np.logical_and(tt, tac > 0)
+    # select tt for xx < inf, yy < inf
+    infinf = 1e10
+    tt = np.logical_and(tt, xx < infinf)
+    tt = np.logical_and(tt, yy < infinf)
+
+    # do linear regression with selected tt
+    xx = xx[tt]
+    yy = yy[tt]
+
+    dvr, inter, _,  _,  _ = linregress(xx, yy)
     bp = dvr - 1
     yyf = dvr * xx + inter
     if fig:
@@ -290,9 +321,19 @@ def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     input_dt = input_dt[1:]
     yy = tac
     xx = np.column_stack((input_cum, tac_cum, input_dt))
-    tt = np.logical_and(mft > linear_phase_start, mft < linear_phase_end)
+
+    # find tt for the linear phase
+    tt = np.logical_and(mft >= linear_phase_start, mft <= linear_phase_end)
     tt = tt[1:]
+    # select tt for tac > 0
+    tt = np.logical_and(tt, tac > 0)
+    # select tt for xx < inf, yy < inf
+    infinf = 1e10
+    tt = np.logical_and(tt, np.all(xx < infinf, axis=-1))
+    tt = np.logical_and(tt, yy < infinf)
+
     mft = mft[1:]
+
     reg = LinearRegression(fit_intercept=False).fit(xx[tt, ], yy[tt])
     bp = - reg.coef_[0]/reg.coef_[1] - 1
     k2p = reg.coef_[0]/reg.coef_[2]
@@ -336,8 +377,17 @@ def mrtm_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
 
     yy = tac
     xx = np.column_stack((input_cum + 1 / k2p * input_dt, tac_cum))
-    tt = np.logical_and(mft > linear_phase_start, mft < linear_phase_end)
+
+    # find tt for the linear phase
+    tt = np.logical_and(mft >= linear_phase_start, mft <= linear_phase_end)
     tt = tt[1:]
+    # select tt for tac > 0
+    tt = np.logical_and(tt, tac > 0)
+    # select tt for xx < inf, yy < inf
+    infinf = 1e10
+    tt = np.logical_and(tt, np.all(xx < infinf, axis=-1))
+    tt = np.logical_and(tt, yy < infinf)
+
     mft = mft[1:]
     reg = LinearRegression(fit_intercept=False).fit(xx[tt, ], yy[tt])
     bp = - reg.coef_[0]/reg.coef_[1] - 1
@@ -448,6 +498,7 @@ def exp_1_fun(ts_te_w, a0, a1, b1):
 
 
 def exp_1(tac, dt, idx, w, fig):
+    tac[tac < 0] = 0.0
     if w is None:
         w = np.ones_like(tac)
     ts_te_w = (dt[0, idx], dt[1, idx], w[idx])
@@ -479,6 +530,7 @@ def exp_2_fun(ts_te_w, a0, a1, a2, b1, b2):
 
 
 def exp_2(tac, dt, idx, w, fig):
+    tac[tac < 0] = 0.0
     if w is None:
         w = np.ones_like(tac)
     ts_te_w = (dt[0, idx], dt[1, idx], w[idx])
@@ -496,6 +548,7 @@ def exp_2(tac, dt, idx, w, fig):
 
 
 def exp_am(tac, dt, idx, fig):
+    tac[tac < 0] = 0.0
     mft = kt.dt2mft(dt)
     p0 = (0.1, 1, 0.1)
     # p, _ = curve_fit(exp_1_fun_t, mft[idx], tac[idx], p0=p0, bounds=(0.00000001, 2500))
@@ -576,6 +629,7 @@ def feng_srtm_fun_t(t, a0, a1, a2, a3, b0, b1, b2, b3):
 
 
 def feng_srtm(tac, dt, w, fig):
+    tac[tac < 0] = 0.0
     if w is None:
         w = 1
     ts_te_w = (dt[0, ], dt[1, ], w)
@@ -596,11 +650,9 @@ def feng_srtm(tac, dt, w, fig):
     return tac1f, p
 
 
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # select model args from user_inputs
 # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
 def get_model_inputs(user_inputs, model_name):
     sig = inspect.signature(globals()[model_name])
     model_inputs = dict()
