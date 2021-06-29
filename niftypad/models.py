@@ -325,12 +325,6 @@ def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     # find tt for the linear phase
     tt = np.logical_and(mft >= linear_phase_start, mft <= linear_phase_end)
     tt = tt[1:]
-    # select tt for tac > 0
-    tt = np.logical_and(tt, tac > 0)
-    # select tt for xx < inf, yy < inf
-    infinf = 1e10
-    tt = np.logical_and(tt, np.all(xx < infinf, axis=-1))
-    tt = np.logical_and(tt, yy < infinf)
 
     mft = mft[1:]
 
@@ -340,6 +334,20 @@ def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     # for 1 TC
     r1 = reg.coef_[2]
     k2 = - reg.coef_[1]
+
+    if np.isnan(bp):
+        bp = 0
+    if np.isnan(r1):
+        r1 = 1.0
+    if r1 > 5:
+        r1 = 5
+    if r1 < -5:
+        r1 = -5
+    if bp > 10:
+        bp = 0
+    if bp < -10:
+        bp = 0
+
     yyf = reg.predict(xx)
     if fig:
         plt.plot(mft, yy, '.')
@@ -366,14 +374,15 @@ def mrtm_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
     input_dt = kt.int2dt(inputf1,dt)
     tac = np.append(0, tac)
     input_dt = np.append(0, input_dt)
-    tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
-    input_cum = np.cumsum((input_dt[:-1] + input_dt[1:]) / 2 * tdur)
-    tac = tac[1:]
-    input_dt = input_dt[1:]
 
     # set negative values to zero
     tac[tac < 0] = 0.0
     input_dt[input_dt < 0] = 0.0
+
+    tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
+    input_cum = np.cumsum((input_dt[:-1] + input_dt[1:]) / 2 * tdur)
+    tac = tac[1:]
+    input_dt = input_dt[1:]
 
     yy = tac
     xx = np.column_stack((input_cum + 1 / k2p * input_dt, tac_cum))
@@ -381,22 +390,34 @@ def mrtm_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
     # find tt for the linear phase
     tt = np.logical_and(mft >= linear_phase_start, mft <= linear_phase_end)
     tt = tt[1:]
-    # select tt for tac > 0
-    tt = np.logical_and(tt, tac > 0)
-    # select tt for xx < inf, yy < inf
-    infinf = 1e10
-    tt = np.logical_and(tt, np.all(xx < infinf, axis=-1))
-    tt = np.logical_and(tt, yy < infinf)
 
     mft = mft[1:]
     reg = LinearRegression(fit_intercept=False).fit(xx[tt, ], yy[tt])
     bp = - reg.coef_[0]/reg.coef_[1] - 1
+
+    # for 1 TC
+    k2 = -reg.coef_[1]
+    r1 = reg.coef_[0]/k2p
+
+    if np.isnan(bp):
+        bp = 0
+    if np.isnan(r1):
+        r1 = 1.0
+    if r1 > 5:
+        r1 = 5
+    if r1 < -5:
+        r1 = -5
+    if bp > 10:
+        bp = 0
+    if bp < -10:
+        bp = 0
+
     yyf = reg.predict(xx)
     if fig:
         plt.plot(mft, yy, '.')
         plt.plot(mft, yyf, 'r')
         plt.show()
-    kps = {'bp': bp}
+    kps = {'bp': bp, 'r1': r1}
     return kps
 
 
