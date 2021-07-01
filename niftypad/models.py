@@ -7,6 +7,7 @@ from scipy.optimize import curve_fit
 from scipy.stats import linregress
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 import inspect
 
 from niftypad import kt
@@ -169,7 +170,11 @@ def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     mft = np.append(0, mft)
     dt_new = np.array([mft[:-1], mft[1:]])
     tdur = kt.dt2tdur(dt_new)
-    input_dt = kt.int2dt(inputf1, dt)
+    # input_dt = kt.int2dt(inputf1, dt)
+    inputff = interp1d(np.arange(len(inputf1)), inputf1, kind='linear', fill_value='extrapolate')
+    input_dt = inputff(mft)
+    input_dt = input_dt[1:]
+
 
     tac = np.append(0, tac)
     input_dt = np.append(0, input_dt)
@@ -250,7 +255,10 @@ def logan_ref_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, f
     mft = np.append(0, mft)
     dt_new = np.array([mft[:-1], mft[1:]])
     tdur = kt.dt2tdur(dt_new)
-    input_dt = kt.int2dt(inputf1,dt)
+    # input_dt = kt.int2dt(inputf1, dt)
+    inputff = interp1d(np.arange(len(inputf1)), inputf1, kind='linear', fill_value='extrapolate')
+    input_dt = inputff(mft)
+    input_dt = input_dt[1:]
     tac = np.append(0, tac)
     input_dt = np.append(0, input_dt)
 
@@ -307,7 +315,10 @@ def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     mft = np.append(0, mft)
     dt_new = np.array([mft[:-1], mft[1:]])
     tdur = kt.dt2tdur(dt_new)
-    input_dt = kt.int2dt(inputf1,dt)
+    # input_dt = kt.int2dt(inputf1, dt)
+    inputff = interp1d(np.arange(len(inputf1)), inputf1, kind='linear', fill_value='extrapolate')
+    input_dt = inputff(mft)
+    input_dt = input_dt[1:]
     tac = np.append(0, tac)
     input_dt = np.append(0, input_dt)
 
@@ -371,7 +382,10 @@ def mrtm_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
     mft = np.append(0, mft)
     dt_new = np.array([mft[:-1], mft[1:]])
     tdur = kt.dt2tdur(dt_new)
-    input_dt = kt.int2dt(inputf1,dt)
+    # input_dt = kt.int2dt(inputf1,dt)
+    inputff = interp1d(np.arange(len(inputf1)), inputf1, kind='linear', fill_value='extrapolate')
+    input_dt = inputff(mft)
+    input_dt = input_dt[1:]
     tac = np.append(0, tac)
     input_dt = np.append(0, input_dt)
 
