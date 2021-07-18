@@ -7,7 +7,7 @@ from . import readers
 log = logging.getLogger(__name__)
 
 
-def kinetic_model(src, dst=None, params=None, model='srtmb_basis', w=None, r1=0.905, k2p=0.000250,
+def kinetic_model(src, dst=None, params=None, model='srtmb_basis', input_interp_method='linear', w=None, r1=1, k2p=0.000250,
                   beta_lim=None, n_beta=40, linear_phase_start=500, linear_phase_end=None,
                   km_outputs=None, thr=0.1, fig=False):
     """
@@ -17,6 +17,21 @@ def kinetic_model(src, dst=None, params=None, model='srtmb_basis', w=None, r1=0.
       params (Path or str): config (relative to `src` directory)
       model (str): srtmb_basis, srtmb_k2p_basis, srtmb_asl_basis, logan_ref, logan_ref_k2p,
         mrtm, mrtm_k2p
+      # more args descriptions
+      input_interp_method (str): linear, cubic, exp_1, exp_2, feng_srtm
+      (the interpolation method for getting reference input)
+      w (None or numpy array): weights for weighted model fitting
+      r1 (a value): a pre-chosen value between 0 and 1 for r1, used in srtmb_asl_basis
+      k2p (a value): a pre-chosen value for k2p, in second^-1, used in srtmb_k2p_basis, logan_ref_k2p, mrtm_k2p
+      beta_lim (a list): [beta_min, beta_max] for setting the lower and upper limits of beta values in basis functions,
+       used in srtmb_basis, srtmb_k2p_basis, srtmb_asl_basis
+      n_beta (integer): number of beta values / basis functions, used in srtmb_basis, srtmb_k2p_basis, srtmb_asl_basis
+      linear_phase_start (integer): the second when the linear phase starts, used in logan_ref, logan_ref_k2p, mrtm, mrtm_k2p
+      linear_phase_end (integer): the second when the linear phase ends, used in logan_ref, logan_ref_k2p, mrtm, mrtm_k2p
+      km_outputs (list): e.g. ['R1', 'k2', 'BP'] indicates the kinetic parameters to save
+      thr (a value): threshold value between 0 and 1, to create a mask to choose any voxel,
+       that has mean value over time > thr * max(image value)
+      fig (logical): whether to show a figure to check model fitting
     """
     import nibabel as nib
     import numpy as np
@@ -44,7 +59,8 @@ def kinetic_model(src, dst=None, params=None, model='srtmb_basis', w=None, r1=0.
     dt = np.asarray(meta['dt'])
     ref = np.asarray(meta['ref'])
     ref = Ref(ref, dt)
-    ref.interp_1cubic()
+    # change ref interpolation to selected method
+    ref.run_interp(input_interp_method=input_interp_method)
 
     log.debug("looking for first `*.nii` file in %s", src_path)
     img = nib.load(fpath)
@@ -54,13 +70,14 @@ def kinetic_model(src, dst=None, params=None, model='srtmb_basis', w=None, r1=0.
     # basis functions
     if beta_lim is None:
         beta_lim = [0.01 / 60, 0.3 / 60]
-    b = basis.make_basis(ref.inputf1cubic, dt, beta_lim=beta_lim, n_beta=n_beta, w=w, k2p=k2p)
+    # change ref.inputf1cubic -> ref.input_interp_1
+    b = basis.make_basis(ref.input_interp_1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w, k2p=k2p)
 
     if km_outputs is None:
         km_outputs = ['R1', 'k2', 'BP']
-
+    # change ref.inputf1cubic -> ref.input_interp_1
     user_inputs = {
-        'dt': dt, 'inputf1': ref.inputf1cubic, 'w': w, 'r1': r1, 'k2p': k2p, 'beta_lim': beta_lim,
+        'dt': dt, 'ref': ref, 'inputf1': ref.input_interp_1, 'w': w, 'r1': r1, 'k2p': k2p, 'beta_lim': beta_lim,
         'n_beta': n_beta, 'b': b, 'linear_phase_start': linear_phase_start,
         'linear_phase_end': linear_phase_end, 'fig': fig}
     model_inputs = get_model_inputs(user_inputs, model)
@@ -73,3 +90,4 @@ def kinetic_model(src, dst=None, params=None, model='srtmb_basis', w=None, r1=0.
                  f"{dst_path / fpath.stem}_{model}_{kp}_{fpath.suffix}")
     nib.save(nib.Nifti1Image(pet_image_fit, img.affine),
              f"{dst_path / fpath.stem}_{model}_fit_{fpath.suffix}")
+
