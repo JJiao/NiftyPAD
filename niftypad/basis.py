@@ -3,6 +3,7 @@ __author__ = 'jieqing jiao'
 import numpy as np
 from . import kt
 import matplotlib.pyplot as plt
+from scipy.signal import convolve
 
 
 def make_basis(inputf1, dt, beta_lim=[10e-6, 10e-1], n_beta=128, beta_space='log', w=None, k2p=None, fig=False):
@@ -16,7 +17,7 @@ def make_basis(inputf1, dt, beta_lim=[10e-6, 10e-1], n_beta=128, beta_space='log
 
     # generate basis functions and m based on dt
     if beta_space == 'log':
-        beta = np.logspace(start=np.log10(beta_lim[0]), stop=np.log10(beta_lim[1]), num=n_beta)
+        beta = np.logspace(start=np.log10(beta_lim[0]), stop=np.log10(beta_lim[1]), num=n_beta, endpoint=False)
     elif beta_space == 'natural':
         beta = np.zeros(n_beta)
         for i in range(0, n_beta):
@@ -31,7 +32,9 @@ def make_basis(inputf1, dt, beta_lim=[10e-6, 10e-1], n_beta=128, beta_space='log
 
     for i in range(0, beta.size):
         # make basis
+        # inputf1[inputf1 < 0] = 0.0
         basis1 = np.convolve(inputf1, np.exp(-beta[i]*t1))
+        # basis1 = convolve(inputf1, np.exp(-beta[i]*t1), method='direct')
         basis[i, :] = kt.int2dt(basis1, dt)
         if w is not None:
             basis_w[i, :] = basis[i, :] * w
