@@ -36,7 +36,7 @@ repos:
     - flake8-debugger
     - flake8-string-format
 - repo: https://github.com/google/yapf
-  rev: 6db9374
+  rev: v0.31.0
   hooks:
   - id: yapf
     args: [-i]
