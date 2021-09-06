@@ -19,7 +19,7 @@ def kinetic_model(src, dst=None, params=None, model='srtmb_basis', input_interp_
         mrtm, mrtm_k2p
       input_interp_method (str): the interpolation method for getting reference input:
         linear, cubic, exp_1, exp_2, feng_srtm
-      w (None or numpy array): weights for weighted model fitting
+      w (ndarray): weights for weighted model fitting
       r1 (float): a pre-chosen value between 0 and 1 for r1, used in srtmb_asl_basis
       k2p (float): a pre-chosen value for k2p, in second^-1, used in
         srtmb_k2p_basis, logan_ref_k2p, mrtm_k2p
@@ -27,11 +27,13 @@ def kinetic_model(src, dst=None, params=None, model='srtmb_basis', input_interp_
         of beta values in basis functions, used in srtmb_basis, srtmb_k2p_basis, srtmb_asl_basis
       n_beta (int): number of beta values/basis functions, used in
         srtmb_basis, srtmb_k2p_basis, srtmb_asl_basis
-      linear_phase_start (integer): the second when the linear phase starts, used in logan_ref, logan_ref_k2p, mrtm, mrtm_k2p
-      linear_phase_end (integer): the second when the linear phase ends, used in logan_ref, logan_ref_k2p, mrtm, mrtm_k2p
+      linear_phase_start (int): start time of linear phase in seconds, used in logan_ref,
+        logan_ref_k2p, mrtm, mrtm_k2p
+      linear_phase_end (int): end time of linear phase in seconds, used in logan_ref,
+        logan_ref_k2p, mrtm, mrtm_k2p
       km_outputs (list[str]): the kinetic parameters to save, e.g. ['R1', 'k2', 'BP']
-      thr (a value): threshold value between 0 and 1, to create a mask to choose any voxel,
-        that has mean value over time > thr * max(image value)
+      thr (float): threshold value between 0 and 1. Used to mask out voxels with mean value
+        over time exceeding `thr * max(image value)`
       fig (bool): whether to show a figure to check model fitting
     """
     import nibabel as nib
