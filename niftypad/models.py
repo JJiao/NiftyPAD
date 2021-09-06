@@ -5,6 +5,7 @@ import inspect
 
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 from scipy.stats import linregress
 from sklearn.linear_model import LinearRegression
@@ -18,6 +19,8 @@ from . import basis, kp, kt
 
 def srtmb_basis(tac, b):
     """srtm model for img with pre-calculated basis functions"""
+    tac[tac < 0] = 0.0
+
     n_beta = b['beta'].size
     ssq = np.zeros(n_beta)
 
@@ -54,12 +57,15 @@ def srtmb_basis_para2tac(r1, k2, bp, b):
 
 def srtmb(tac, dt, inputf1, beta_lim, n_beta, w):
     """srtm model for tac, basis functions will be calculated"""
+    tac[tac < 0] = 0.0
     b = basis.make_basis(inputf1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w)
     return srtmb_basis(tac, b)
 
 
 def srtmb_asl_basis(tac, b, r1):
     """srtm model for tac with fixed R1 and pre-calculated basis functions"""
+    tac[tac < 0] = 0.0
+
     n_beta = b['beta'].size
     ssq = np.zeros(n_beta)
 
@@ -91,6 +97,7 @@ def srtmb_asl_basis(tac, b, r1):
 
 def srtmb_asl(tac, dt, inputf1, beta_lim, n_beta, w, r1):
     """srtm model for tac with fixed R1, basis functions will be calculated"""
+    tac[tac < 0] = 0.0
     b = basis.make_basis(inputf1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w)
     kps = srtmb_asl_basis(tac, b, r1)
     return kps
@@ -98,6 +105,8 @@ def srtmb_asl(tac, dt, inputf1, beta_lim, n_beta, w, r1):
 
 def srtmb_k2p_basis(tac, b):
     """srtm model for img with fixed k2p and pre-calculated basis functions"""
+    tac[tac < 0] = 0.0
+
     n_beta = b['beta'].size
     ssq = np.zeros(n_beta)
 
@@ -131,9 +140,13 @@ def srtmb_k2p_basis_para2tac(r1, k2, bp, b):
 
 def srtmb_k2p(tac, dt, inputf1, beta_lim, n_beta, w, k2p):
     """srtm model for tac with fixed k2p, basis functions will be calculated"""
+    tac[tac < 0] = 0.0
     b = basis.make_basis(inputf1, dt, beta_lim=beta_lim, n_beta=n_beta, w=w, k2p=k2p)
     kps = srtmb_k2p_basis(tac, b)
     return kps
+
+
+# # # # # # graphic models
 
 
 def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
@@ -152,26 +165,47 @@ def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     mft = np.append(0, mft)
     dt_new = np.array([mft[:-1], mft[1:]])
     tdur = kt.dt2tdur(dt_new)
-    input_dt = kt.int2dt(inputf1, dt)
+    # input_dt = kt.int2dt(inputf1, dt)
+    inputff = interp1d(np.arange(len(inputf1)), inputf1, kind='linear', fill_value='extrapolate')
+    input_dt = inputff(mft)
+    input_dt = input_dt[1:]
+
     tac = np.append(0, tac)
     input_dt = np.append(0, input_dt)
+
+    # set negative values to zero
+    tac[tac < 0] = 0.0
+    input_dt[input_dt < 0] = 0.0
+
+    # calculate integration
     tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
     input_cum = np.cumsum((input_dt[:-1] + input_dt[1:]) / 2 * tdur)
     tac = tac[1:]
     input_dt = input_dt[1:]
-    yy = np.zeros(tac.shape)
-    xx = np.zeros(tac.shape)
-    mask = tac.nonzero()
-    yy[mask] = tac_cum[mask] / tac[mask]
-    xx[mask] = input_cum[mask] / tac[mask]
-    tt = np.logical_and(mft > linear_phase_start, mft < linear_phase_end)
+
+    yy = tac_cum / (tac+0.0000000000000001)   # ADDED BY MY 20210616
+    xx = input_cum / (tac+0.0000000000000001) # ADDED BY MY 20210616
+
+    # find tt for the linear phase
+    tt = np.logical_and(mft >= linear_phase_start, mft <= linear_phase_end)
     tt = tt[1:]
-    dvr, inter, _, _, _ = linregress(xx[tt], yy[tt])
+    # select tt for tac > 0
+    tt = np.logical_and(tt, tac > 0)
+    # select tt for xx < inf, yy < inf
+    infinf = 1e10
+    tt = np.logical_and(tt, xx < infinf)
+    tt = np.logical_and(tt, yy < infinf)
+
+    # do linear regression with selected tt
+    xx = xx[tt]
+    yy = yy[tt]
+
+    dvr, inter, _, _, _ = linregress(xx, yy)
     bp = dvr - 1
     yyf = dvr*xx + inter
     if fig:
         plt.plot(xx, yy, '.')
-        plt.plot(xx[tt], yyf[tt], 'r')
+        plt.plot(xx, yyf, 'r')
         plt.show()
     kps = {'bp': bp}
     return kps
@@ -193,21 +227,40 @@ def logan_ref_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, f
     mft = np.append(0, mft)
     dt_new = np.array([mft[:-1], mft[1:]])
     tdur = kt.dt2tdur(dt_new)
-    input_dt = kt.int2dt(inputf1, dt)
+    # input_dt = kt.int2dt(inputf1, dt)
+    inputff = interp1d(np.arange(len(inputf1)), inputf1, kind='linear', fill_value='extrapolate')
+    input_dt = inputff(mft)
+    input_dt = input_dt[1:]
     tac = np.append(0, tac)
     input_dt = np.append(0, input_dt)
+
+    # set negative values to zero
+    tac[tac < 0] = 0.0
+    input_dt[input_dt < 0] = 0.0
+
     tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
     input_cum = np.cumsum((input_dt[:-1] + input_dt[1:]) / 2 * tdur)
     tac = tac[1:]
     input_dt = input_dt[1:]
-    yy = np.zeros(tac.shape)
-    xx = np.zeros(tac.shape)
-    mask = tac.nonzero()
-    yy[mask] = tac_cum[mask] / tac[mask]
-    xx[mask] = (input_cum[mask] + input_dt[mask] / k2p) / tac[mask]
-    tt = np.logical_and(mft > linear_phase_start, mft < linear_phase_end)
+
+    yy = tac_cum / (tac+0.0000000000000001)
+    xx = (input_cum + input_dt/k2p) / (tac+0.0000000000000001)
+
+    # find tt for the linear phase
+    tt = np.logical_and(mft >= linear_phase_start, mft <= linear_phase_end)
     tt = tt[1:]
-    dvr, inter, _, _, _ = linregress(xx[tt], yy[tt])
+    # select tt for tac > 0
+    tt = np.logical_and(tt, tac > 0)
+    # select tt for xx < inf, yy < inf
+    infinf = 1e10
+    tt = np.logical_and(tt, xx < infinf)
+    tt = np.logical_and(tt, yy < infinf)
+
+    # do linear regression with selected tt
+    xx = xx[tt]
+    yy = yy[tt]
+
+    dvr, inter, _, _, _ = linregress(xx, yy)
     bp = dvr - 1
     yyf = dvr*xx + inter
     if fig:
@@ -231,24 +284,50 @@ def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     mft = np.append(0, mft)
     dt_new = np.array([mft[:-1], mft[1:]])
     tdur = kt.dt2tdur(dt_new)
-    input_dt = kt.int2dt(inputf1, dt)
+    # input_dt = kt.int2dt(inputf1, dt)
+    inputff = interp1d(np.arange(len(inputf1)), inputf1, kind='linear', fill_value='extrapolate')
+    input_dt = inputff(mft)
+    input_dt = input_dt[1:]
     tac = np.append(0, tac)
     input_dt = np.append(0, input_dt)
+
+    # set negative values to zero
+    tac[tac < 0] = 0.0
+    input_dt[input_dt < 0] = 0.0
+
     tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
     input_cum = np.cumsum((input_dt[:-1] + input_dt[1:]) / 2 * tdur)
     tac = tac[1:]
     input_dt = input_dt[1:]
     yy = tac
     xx = np.column_stack((input_cum, tac_cum, input_dt))
-    tt = np.logical_and(mft > linear_phase_start, mft < linear_phase_end)
+
+    # find tt for the linear phase
+    tt = np.logical_and(mft >= linear_phase_start, mft <= linear_phase_end)
     tt = tt[1:]
+
     mft = mft[1:]
+
     reg = LinearRegression(fit_intercept=False).fit(xx[tt,], yy[tt])
     bp = -reg.coef_[0] / reg.coef_[1] - 1
     k2p = reg.coef_[0] / reg.coef_[2]
     # for 1 TC
     r1 = reg.coef_[2]
     k2 = -reg.coef_[1]
+
+    if np.isnan(bp):
+        bp = 0
+    if np.isnan(r1):
+        r1 = 1.0
+    if r1 > 5:
+        r1 = 5
+    if r1 < -5:
+        r1 = -5
+    if bp > 10:
+        bp = 0
+    if bp < -10:
+        bp = 0
+
     yyf = reg.predict(xx)
     if fig:
         plt.plot(mft, yy, '.')
@@ -271,26 +350,357 @@ def mrtm_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
     mft = np.append(0, mft)
     dt_new = np.array([mft[:-1], mft[1:]])
     tdur = kt.dt2tdur(dt_new)
-    input_dt = kt.int2dt(inputf1, dt)
+    # input_dt = kt.int2dt(inputf1,dt)
+    inputff = interp1d(np.arange(len(inputf1)), inputf1, kind='linear', fill_value='extrapolate')
+    input_dt = inputff(mft)
+    input_dt = input_dt[1:]
     tac = np.append(0, tac)
     input_dt = np.append(0, input_dt)
+
+    # set negative values to zero
+    tac[tac < 0] = 0.0
+    input_dt[input_dt < 0] = 0.0
+
     tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
     input_cum = np.cumsum((input_dt[:-1] + input_dt[1:]) / 2 * tdur)
     tac = tac[1:]
     input_dt = input_dt[1:]
+
     yy = tac
     xx = np.column_stack((input_cum + 1/k2p*input_dt, tac_cum))
-    tt = np.logical_and(mft > linear_phase_start, mft < linear_phase_end)
+
+    # find tt for the linear phase
+    tt = np.logical_and(mft >= linear_phase_start, mft <= linear_phase_end)
     tt = tt[1:]
+
     mft = mft[1:]
     reg = LinearRegression(fit_intercept=False).fit(xx[tt,], yy[tt])
     bp = -reg.coef_[0] / reg.coef_[1] - 1
+
+    # for 1 TC
+    k2 = -reg.coef_[1]
+    r1 = reg.coef_[0] / k2p
+
+    if np.isnan(bp):
+        bp = 0
+    if np.isnan(r1):
+        r1 = 1.0
+    if r1 > 5:
+        r1 = 5
+    if r1 < -5:
+        r1 = -5
+    if bp > 10:
+        bp = 0
+    if bp < -10:
+        bp = 0
+
     yyf = reg.predict(xx)
     if fig:
         plt.plot(mft, yy, '.')
         plt.plot(mft, yyf, 'r')
         plt.show()
+    kps = {'bp': bp, 'r1': r1}
+    return kps
+
+
+# # # # # # graphic models - PPET version
+
+
+def logan_ref_ppet(tac, dt, ref, linear_phase_start, linear_phase_end, fig):
+    """
+    logan_ref - logan reference plot without fixed k2p for tac, based on eq.7 in
+    "Distribution Volume Ratios Without Blood Sampling from Graphical Analysis of PET Data"
+    PPET version: calculate input_dt and input_cum differently
+    """
+    if linear_phase_start is None:
+        linear_phase_start = 0
+    if linear_phase_end is None:
+        linear_phase_end = np.amax(dt)
+    # fill the coffee break gap
+    if kt.dt_has_gaps(dt):
+        tac, dt = kt.tac_dt_fill_coffee_break(tac, dt)
+    mft = kt.dt2mft(dt)
+    mft = np.append(0, mft)
+    dt_new = np.array([mft[:-1], mft[1:]])
+    tdur = kt.dt2tdur(dt_new)
+    # get input_dt from ref.tac, if dt and ref.dt are the same
+    if np.array_equal(dt, ref.dt):
+        input_dt = ref.tac
+    else:
+        inputff = interp1d(kt.dt2mft(ref.dt), ref.tac, kind='linear', fill_value='extrapolate')
+        input_dt = inputff(mft)
+        input_dt = input_dt[1:]
+
+    tac = np.append(0, tac)
+    input_dt = np.append(0, input_dt)
+
+    # set negative values to zero
+    tac[tac < 0] = 0.0
+    input_dt[input_dt < 0] = 0.0
+
+    # calculate integration
+    tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
+    # calculate input_cum using inputf1, and only until mid frame time
+    inputf1 = kt.interpt1(kt.dt2mft(ref.dt), ref.tac, dt)
+    input_cum1 = np.cumsum(inputf1)
+    input_cum1_mft = input_cum1[mft.astype(int)]
+    input_cum = input_cum1_mft
+    # tac_cum and input_cum are calculated in such a way to match tac
+
+    tac = tac[1:]
+    input_dt = input_dt[1:]
+    input_cum = input_cum[1:]
+
+    yy = tac_cum / (tac+0.0000000000000001)   # ADDED BY MY 20210616
+    xx = input_cum / (tac+0.0000000000000001) # ADDED BY MY 20210616
+
+    # find tt for the linear phase
+    tt = np.logical_and(mft >= linear_phase_start, mft <= linear_phase_end)
+    tt = tt[1:]
+    # select tt for tac > 0
+    tt = np.logical_and(tt, tac > 0)
+    # select tt for xx < inf, yy < inf
+    infinf = 1e10
+    tt = np.logical_and(tt, xx < infinf)
+    tt = np.logical_and(tt, yy < infinf)
+
+    # do linear regression with selected tt
+    xx = xx[tt]
+    yy = yy[tt]
+
+    dvr, inter, _, _, _ = linregress(xx, yy)
+    bp = dvr - 1
+    yyf = dvr*xx + inter
+    if fig:
+        plt.plot(xx, yy, '.')
+        plt.plot(xx, yyf, 'r')
+        plt.show()
     kps = {'bp': bp}
+    return kps
+
+
+def logan_ref_k2p_ppet(tac, dt, ref, k2p, linear_phase_start, linear_phase_end, fig):
+    """
+    logan_ref_k2p - logan reference plot with fixed k2p for tac, based on eq.6 in
+    "Distribution Volume Ratios Without Blood Sampling from Graphical Analysis of PET Data"
+    PPET version: calculate input_dt and input_cum differently
+    """
+    if linear_phase_start is None:
+        linear_phase_start = 0
+    if linear_phase_end is None:
+        linear_phase_end = np.amax(dt)
+    # fill the coffee break gap
+    if kt.dt_has_gaps(dt):
+        tac, dt = kt.tac_dt_fill_coffee_break(tac, dt)
+    mft = kt.dt2mft(dt)
+    mft = np.append(0, mft)
+    dt_new = np.array([mft[:-1], mft[1:]])
+    tdur = kt.dt2tdur(dt_new)
+    # get input_dt from ref.tac, if dt and ref.dt are the same
+    if np.array_equal(dt, ref.dt):
+        input_dt = ref.tac
+    else:
+        inputff = interp1d(kt.dt2mft(ref.dt), ref.tac, kind='linear', fill_value='extrapolate')
+        input_dt = inputff(mft)
+        input_dt = input_dt[1:]
+
+    tac = np.append(0, tac)
+    input_dt = np.append(0, input_dt)
+
+    # set negative values to zero
+    tac[tac < 0] = 0.0
+    input_dt[input_dt < 0] = 0.0
+
+    tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
+    # calculate input_cum using inputf1, and only until mid frame time
+    inputf1 = kt.interpt1(kt.dt2mft(ref.dt), ref.tac, dt)
+    input_cum1 = np.cumsum(inputf1)
+    input_cum1_mft = input_cum1[mft.astype(int)]
+    input_cum = input_cum1_mft
+    # tac_cum and input_cum are calculated in such a way to match tac
+    tac = tac[1:]
+    input_dt = input_dt[1:]
+    input_cum = input_cum[1:]
+
+    yy = tac_cum / (tac+0.0000000000000001)
+    xx = (input_cum + input_dt/k2p) / (tac+0.0000000000000001)
+
+    # find tt for the linear phase
+    tt = np.logical_and(mft >= linear_phase_start, mft <= linear_phase_end)
+    tt = tt[1:]
+    # select tt for tac > 0
+    tt = np.logical_and(tt, tac > 0)
+    # select tt for xx < inf, yy < inf
+    infinf = 1e10
+    tt = np.logical_and(tt, xx < infinf)
+    tt = np.logical_and(tt, yy < infinf)
+
+    # do linear regression with selected tt
+    xx = xx[tt]
+    yy = yy[tt]
+
+    dvr, inter, _, _, _ = linregress(xx, yy)
+    bp = dvr - 1
+    yyf = dvr*xx + inter
+    if fig:
+        plt.plot(xx, yy, '.')
+        plt.plot(xx[tt], yyf[tt], 'r')
+        plt.show()
+    kps = {'bp': bp}
+    return kps
+
+
+# mrtm - Ichise's multilinear reference tissue model
+#  PPET version: calculate input_dt and input_cum differently
+def mrtm_ppet(tac, dt, ref, linear_phase_start, linear_phase_end, fig):
+    if linear_phase_start is None:
+        linear_phase_start = 0
+    if linear_phase_end is None:
+        linear_phase_end = np.amax(dt)
+    # fill the coffee break gap
+    if kt.dt_has_gaps(dt):
+        tac, dt = kt.tac_dt_fill_coffee_break(tac, dt)
+    mft = kt.dt2mft(dt)
+    mft = np.append(0, mft)
+    dt_new = np.array([mft[:-1], mft[1:]])
+    tdur = kt.dt2tdur(dt_new)
+    # get input_dt from ref.tac, if dt and ref.dt are the same
+    if np.array_equal(dt, ref.dt):
+        input_dt = ref.tac
+    else:
+        inputff = interp1d(kt.dt2mft(ref.dt), ref.tac, kind='linear', fill_value='extrapolate')
+        input_dt = inputff(mft)
+        input_dt = input_dt[1:]
+
+    tac = np.append(0, tac)
+    input_dt = np.append(0, input_dt)
+
+    # set negative values to zero
+    tac[tac < 0] = 0.0
+    input_dt[input_dt < 0] = 0.0
+
+    tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
+    # calculate input_cum using inputf1, and only until mid frame time
+    inputf1 = kt.interpt1(kt.dt2mft(ref.dt), ref.tac, dt)
+    input_cum1 = np.cumsum(inputf1)
+    input_cum1_mft = input_cum1[mft.astype(int)]
+    input_cum = input_cum1_mft
+    # tac_cum and input_cum are calculated in such a way to match tac
+    tac = tac[1:]
+    input_dt = input_dt[1:]
+    input_cum = input_cum[1:]
+    yy = tac
+    xx = np.column_stack((input_cum, tac_cum, input_dt))
+
+    # find tt for the linear phase
+    tt = np.logical_and(mft >= linear_phase_start, mft <= linear_phase_end)
+    tt = tt[1:]
+
+    mft = mft[1:]
+
+    reg = LinearRegression(fit_intercept=False).fit(xx[tt,], yy[tt])
+    bp = -reg.coef_[0] / reg.coef_[1] - 1
+    k2p = reg.coef_[0] / reg.coef_[2]
+    # for 1 TC
+    r1 = reg.coef_[2]
+    k2 = -reg.coef_[1]
+
+    if np.isnan(bp):
+        bp = 0
+    if np.isnan(r1):
+        r1 = 1.0
+    if r1 > 5:
+        r1 = 5
+    if r1 < -5:
+        r1 = -5
+    if bp > 10:
+        bp = 0
+    if bp < -10:
+        bp = 0
+
+    yyf = reg.predict(xx)
+    if fig:
+        plt.plot(mft, yy, '.')
+        plt.plot(mft, yyf, 'r')
+        plt.show()
+    kps = {'bp': bp, 'k2p': k2p, 'r1': r1, 'k2': k2}
+    return kps
+
+
+# mrtm - Ichise's multilinear reference tissue model with fixed k2prime
+#  PPET version: calculate input_dt and input_cum differently
+def mrtm_k2p_ppet(tac, dt, ref, k2p, linear_phase_start, linear_phase_end, fig):
+    if linear_phase_start is None:
+        linear_phase_start = 0
+    if linear_phase_end is None:
+        linear_phase_end = np.amax(dt)
+    # fill the coffee break gap
+    if kt.dt_has_gaps(dt):
+        tac, dt = kt.tac_dt_fill_coffee_break(tac, dt)
+    mft = kt.dt2mft(dt)
+    mft = np.append(0, mft)
+    dt_new = np.array([mft[:-1], mft[1:]])
+    tdur = kt.dt2tdur(dt_new)
+    # get input_dt from ref.tac, if dt and ref.dt are the same
+    if np.array_equal(dt, ref.dt):
+        input_dt = ref.tac
+    else:
+        inputff = interp1d(kt.dt2mft(ref.dt), ref.tac, kind='linear', fill_value='extrapolate')
+        input_dt = inputff(mft)
+        input_dt = input_dt[1:]
+
+    tac = np.append(0, tac)
+    input_dt = np.append(0, input_dt)
+
+    # set negative values to zero
+    tac[tac < 0] = 0.0
+    input_dt[input_dt < 0] = 0.0
+
+    tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
+    # calculate input_cum using inputf1, and only until mid frame time
+    inputf1 = kt.interpt1(kt.dt2mft(ref.dt), ref.tac, dt)
+    input_cum1 = np.cumsum(inputf1)
+    input_cum1_mft = input_cum1[mft.astype(int)]
+    input_cum = input_cum1_mft
+    # tac_cum and input_cum are calculated in such a way to match tac
+    tac = tac[1:]
+    input_dt = input_dt[1:]
+    input_cum = input_cum[1:]
+
+    yy = tac
+    xx = np.column_stack((input_cum + 1/k2p*input_dt, tac_cum))
+
+    # find tt for the linear phase
+    tt = np.logical_and(mft >= linear_phase_start, mft <= linear_phase_end)
+    tt = tt[1:]
+
+    mft = mft[1:]
+    reg = LinearRegression(fit_intercept=False).fit(xx[tt,], yy[tt])
+    bp = -reg.coef_[0] / reg.coef_[1] - 1
+
+    # for 1 TC
+    k2 = -reg.coef_[1]
+    r1 = reg.coef_[0] / k2p
+
+    if np.isnan(bp):
+        bp = 0
+    if np.isnan(r1):
+        r1 = 1.0
+    if r1 > 5:
+        r1 = 5
+    if r1 < -5:
+        r1 = -5
+    if bp > 10:
+        bp = 0
+    if bp < -10:
+        bp = 0
+
+    yyf = reg.predict(xx)
+    if fig:
+        plt.plot(mft, yy, '.')
+        plt.plot(mft, yyf, 'r')
+        plt.show()
+    kps = {'bp': bp, 'r1': r1}
     return kps
 
 
@@ -393,6 +803,7 @@ def exp_1_fun(ts_te_w, a0, a1, b1):
 
 
 def exp_1(tac, dt, idx, w, fig):
+    tac[tac < 0] = 0.0
     if w is None:
         w = np.ones_like(tac)
     ts_te_w = (dt[0, idx], dt[1, idx], w[idx])
@@ -424,6 +835,7 @@ def exp_2_fun(ts_te_w, a0, a1, a2, b1, b2):
 
 
 def exp_2(tac, dt, idx, w, fig):
+    tac[tac < 0] = 0.0
     if w is None:
         w = np.ones_like(tac)
     ts_te_w = (dt[0, idx], dt[1, idx], w[idx])
@@ -441,6 +853,7 @@ def exp_2(tac, dt, idx, w, fig):
 
 
 def exp_am(tac, dt, idx, fig):
+    tac[tac < 0] = 0.0
     mft = kt.dt2mft(dt)
     p0 = (0.1, 1, 0.1)
     # p, _ = curve_fit(exp_1_fun_t, mft[idx], tac[idx], p0=p0, bounds=(0.00000001, 2500))
@@ -532,6 +945,7 @@ def feng_srtm_fun_t(t, a0, a1, a2, a3, b0, b1, b2, b3):
 
 
 def feng_srtm(tac, dt, w, fig):
+    tac[tac < 0] = 0.0
     if w is None:
         w = 1
     ts_te_w = (dt[0,], dt[1,], w)
