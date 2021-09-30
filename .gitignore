@@ -1,9 +1,14 @@
 *.py[cod]
 __pycache__/
+
+# build
 /niftypad/_dist_ver.py
 /.eggs/
 /*.egg-info/
 /build/
 /dist/
+
+# Unit test / coverage reports
 /.coverage*
 /coverage.xml
+/.pytest_cache/
