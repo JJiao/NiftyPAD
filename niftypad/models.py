@@ -378,7 +378,7 @@ def mrtm_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
     bp = -reg.coef_[0] / reg.coef_[1] - 1
 
     # for 1 TC
-    k2 = -reg.coef_[1]
+    # k2 = -reg.coef_[1]
     r1 = reg.coef_[0] / k2p
 
     if np.isnan(bp):
@@ -679,7 +679,7 @@ def mrtm_k2p_ppet(tac, dt, ref, k2p, linear_phase_start, linear_phase_end, fig):
     bp = -reg.coef_[0] / reg.coef_[1] - 1
 
     # for 1 TC
-    k2 = -reg.coef_[1]
+    # k2 = -reg.coef_[1]
     r1 = reg.coef_[0] / k2p
 
     if np.isnan(bp):
