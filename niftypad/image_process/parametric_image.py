@@ -35,7 +35,9 @@ def image_to_parametric(pet_image, dt, model_name, model_inputs, km_outputs, thr
             parametric_images[p][mask[i][0], mask[i][1],
                                  mask[i][2],] = tac.km_results[km_outputs[p].lower()]
     parametric_images_dict = dict(zip(km_outputs, parametric_images))
-    return parametric_images_dict, pet_image_fit
+    if 'tacf' in tac.km_results:
+        return parametric_images_dict, pet_image_fit
+    return parametric_images_dict
 
 
 def parametric_to_image(parametric_images_dict, dt, model, km_inputs):
