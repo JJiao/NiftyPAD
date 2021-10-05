@@ -15,8 +15,7 @@ def kinetic_model(src, dst=None, params=None, model='srtmb_basis', input_interp_
       src (Path or str): input patient directory or filename
       dst (Path or str): output directory (default: `src` directory)
       params (Path or str): config (relative to `src` directory)
-      model (str): srtmb_basis, srtmb_k2p_basis, srtmb_asl_basis, logan_ref, logan_ref_k2p,
-        mrtm, mrtm_k2p
+      model (str): any model from `niftypad.models` (see `niftypad.models.NAMES`)
       input_interp_method (str): the interpolation method for getting reference input:
         linear, cubic, exp_1, exp_2, feng_srtm
       w (ndarray): weights for weighted model fitting

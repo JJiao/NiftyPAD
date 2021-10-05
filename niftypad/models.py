@@ -1,6 +1,3 @@
-__author__ = 'jieqing jiao'
-__email__ = "jieqing.jiao@gmail.com"
-
 import inspect
 
 import matplotlib.pyplot as plt
@@ -11,6 +8,34 @@ from scipy.stats import linregress
 from sklearn.linear_model import LinearRegression
 
 from . import basis, kp, kt
+
+__author__ = "Jieqing Jiao <jieqing.jiao@gmail.com>"
+# excludes:
+# - exp_am: input interpolation requested by some users
+# - *_ppet: kinetic model implementations of the PPET software
+# - *_para2tac: generative models for motion correction
+NAMES = [
+    'exp_1', 'exp_1_fun', 'exp_1_fun_t', 'exp_2', 'exp_2_fun', 'exp_2_fun_t', 'feng_fun_t',
+    'feng_srtm', 'feng_srtm_fun', 'feng_srtm_fun_t', 'get_model_inputs', 'list_models',
+    'logan_ref', 'logan_ref_k2p', 'mrtm', 'mrtm_k2p', 'srtm', 'srtm_fun', 'srtm_fun_k2p',
+    'srtm_fun_k2p_w', 'srtm_fun_w', 'srtm_k2p', 'srtmb', 'srtmb_asl', 'srtmb_asl_basis',
+    'srtmb_basis', 'srtmb_k2p', 'srtmb_k2p_basis']
+__all__ = NAMES + ['NAMES', 'get_model_inputs']
+
+
+def get_model_inputs(user_inputs, model_name):
+    """select model args from user_inputs"""
+    if model_name not in NAMES:
+        raise ValueError(f"Unknown model:'{model_name}' not in {NAMES}")
+    sig = inspect.signature(globals()[model_name])
+    model_inputs = {}
+    for p in sig.parameters.values():
+        n = p.name
+        # d = None if p.default == inspect.Parameter.empty else p.default
+        if n in user_inputs:
+            model_inputs[n] = user_inputs[n]
+    return model_inputs
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # linear models
@@ -550,9 +575,11 @@ def logan_ref_k2p_ppet(tac, dt, ref, k2p, linear_phase_start, linear_phase_end, 
     return kps
 
 
-# mrtm - Ichise's multilinear reference tissue model
-#  PPET version: calculate input_dt and input_cum differently
 def mrtm_ppet(tac, dt, ref, linear_phase_start, linear_phase_end, fig):
+    """
+    Ichise's multilinear reference tissue model.
+    PPET version: calculate input_dt and input_cum differently
+    """
     if linear_phase_start is None:
         linear_phase_start = 0
     if linear_phase_end is None:
@@ -627,9 +654,11 @@ def mrtm_ppet(tac, dt, ref, linear_phase_start, linear_phase_end, fig):
     return kps
 
 
-# mrtm - Ichise's multilinear reference tissue model with fixed k2prime
-#  PPET version: calculate input_dt and input_cum differently
 def mrtm_k2p_ppet(tac, dt, ref, k2p, linear_phase_start, linear_phase_end, fig):
+    """
+    Ichise's multilinear reference tissue model with fixed k2prime.
+    PPET version: calculate input_dt and input_cum differently
+    """
     if linear_phase_start is None:
         linear_phase_start = 0
     if linear_phase_end is None:
@@ -966,19 +995,3 @@ def feng_srtm(tac, dt, w, fig):
         plt.plot(t1, cp1f, 'r', t1, tac1f, 'b', mft, tac, 'go')
         plt.show()
     return tac1f, p
-
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# # select model args from user_inputs
-# # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-
-def get_model_inputs(user_inputs, model_name):
-    sig = inspect.signature(globals()[model_name])
-    model_inputs = {}
-    for p in sig.parameters.values():
-        n = p.name
-        # d = None if p.default == inspect.Parameter.empty else p.default
-        if n in user_inputs:
-            model_inputs[n] = user_inputs[n]
-    return model_inputs
