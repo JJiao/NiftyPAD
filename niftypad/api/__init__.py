@@ -33,7 +33,7 @@ def kinetic_model(src, dst=None, params=None, model='srtmb_basis', input_interp_
         logan_ref_k2p, mrtm, mrtm_k2p
       km_outputs (list[str]): the kinetic parameters to save, e.g. ['R1', 'k2', 'BP']
       thr (float): threshold value between 0 and 1. Used to mask out voxels with mean value
-        over time exceeding `thr * max(image value)`
+        over time less than `thr * max(image value)`
       fig (bool): whether to show a figure to check model fitting
     """
     import nibabel as nib
