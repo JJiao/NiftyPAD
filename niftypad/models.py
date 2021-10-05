@@ -16,10 +16,10 @@ __author__ = "Jieqing Jiao <jieqing.jiao@gmail.com>"
 # - *_para2tac: generative models for motion correction
 NAMES = [
     'exp_1', 'exp_1_fun', 'exp_1_fun_t', 'exp_2', 'exp_2_fun', 'exp_2_fun_t', 'feng_fun_t',
-    'feng_srtm', 'feng_srtm_fun', 'feng_srtm_fun_t', 'get_model_inputs', 'list_models',
-    'logan_ref', 'logan_ref_k2p', 'mrtm', 'mrtm_k2p', 'srtm', 'srtm_fun', 'srtm_fun_k2p',
-    'srtm_fun_k2p_w', 'srtm_fun_w', 'srtm_k2p', 'srtmb', 'srtmb_asl', 'srtmb_asl_basis',
-    'srtmb_basis', 'srtmb_k2p', 'srtmb_k2p_basis']
+    'feng_srtm', 'feng_srtm_fun', 'feng_srtm_fun_t', 'list_models', 'logan_ref', 'logan_ref_k2p',
+    'mrtm', 'mrtm_k2p', 'srtm', 'srtm_fun', 'srtm_fun_k2p', 'srtm_fun_k2p_w', 'srtm_fun_w',
+    'srtm_k2p', 'srtmb', 'srtmb_asl', 'srtmb_asl_basis', 'srtmb_basis', 'srtmb_k2p',
+    'srtmb_k2p_basis']
 __all__ = NAMES + ['NAMES', 'get_model_inputs']
 
 
