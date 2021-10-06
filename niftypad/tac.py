@@ -89,5 +89,6 @@ class Ref:
             'linear': 'interp_1', 'cubic': 'interp_1cubic', 'exp_1': 'run_exp1',
             'exp_2': 'run_exp2', 'exp_am': 'run_exp_am', 'feng_srtm': 'run_feng_srtm'}
         self.input_interp_method = input_interp_method
-        interp_method = getattr(self, input_interp_methods[input_interp_method])
-        interp_method(self, **kwargs)
+        interp_method = getattr(self,
+                                input_interp_methods.get(input_interp_method, input_interp_method))
+        return interp_method(**kwargs)
