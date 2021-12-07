@@ -147,7 +147,10 @@ def srtmb_k2p_basis(tac, b):
     ssq = np.zeros(n_beta)
 
     if b['w'] is None:
-        b['w'] = 1
+        b['w'] = np.ones_like(tac)
+    # b['w'] = np.ones_like(tac)
+    # b['w'][0:2] = 0
+    # print(b['w'])
     for i in range(0, n_beta):
         r1 = np.sum(b['w'] * b['basis_k2p'][i] * tac) / np.sum(b['w'] * b['basis_k2p'][i] ** 2)
         ssq[i] = np.sum(b['w'] * (tac - r1 * b['basis_k2p'][i]) ** 2)
@@ -385,7 +388,8 @@ def mrtm(tac, dt, inputf1, w, linear_phase_start, linear_phase_end, fig):
     tt = tt[1:]
 
     mft = mft[1:]
-
+    # print(xx[tt, ])
+    # print(yy[tt])
     reg = LinearRegression(fit_intercept=False).fit(xx[tt, ], yy[tt], sample_weight=w[tt])
     bp = - reg.coef_[0] / reg.coef_[1] - 1
     k2p = reg.coef_[0] / reg.coef_[2]
@@ -456,6 +460,8 @@ def mrtm_k2p(tac, dt, inputf1, k2p, w, linear_phase_start, linear_phase_end, fig
     tt = tt[1:]
 
     mft = mft[1:]
+    # print(xx[tt, ])
+    # print(yy[tt])
     reg = LinearRegression(fit_intercept=False).fit(xx[tt, ], yy[tt], sample_weight=w[tt])
     bp = - reg.coef_[0] / reg.coef_[1] - 1
 
@@ -1034,7 +1040,7 @@ def feng_srtm(tac, dt, w, fig):
     a0, a1, a2, a3, b0, b1, b2, b3 = p
     t1 = np.arange(np.amax(dt))
     tac1f = feng_srtm_fun_t(t1, a0, a1, a2, a3, b0, b1, b2, b3)
-    print(tac1f)
+    # print(tac1f)
     if fig:
         print(p)
         cp1f = feng_fun_t(t1, a0, a1, a2, b0, b1, b2)
