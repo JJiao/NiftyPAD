@@ -42,6 +42,7 @@ def mft2dt(mft):
     # print('mind the gap')
     tdur = mft2tdur(mft)
     dt = tdur2dt(tdur)
+    dt = np.rint(dt).astype(int)
     return dt
 
 
