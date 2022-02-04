@@ -54,12 +54,14 @@ def tdur2mft(tdur):
 
 
 def mft_tdur2dt(mft, tdur):
+
     tdur_dummy = mft2tdur(mft)
     index = np.where(tdur_dummy-tdur != 0)
     dt = mft2dt(mft)
     for i in index:
         dt[0, i] = mft[i] - tdur[i] / 2
         dt[1, i] = mft[i] + tdur[i] / 2
+    dt = np.round(dt)
     dt = np.rint(dt).astype(int)
     return dt
 
@@ -142,7 +144,13 @@ def interpt1(inputt, inputf, dt):
     # if inputt[0] > t1[0]:
     #     inputt = np.append(t1[0], inputt)
     #     inputf = np.append(0, inputf)
+    inputt = np.append(0, inputt)
+    inputf = np.append(0, inputf)
     inputff = interp1d(inputt, inputf, kind='linear', fill_value='extrapolate')
+
+    # # Qmodelling interpolation
+    # inputff = interp1d(inputt, inputf, kind='linear', fill_value=(inputf[0], inputf[-1]),bounds_error=False)
+
     inputf1 = inputff(t1)
     return inputf1
 
