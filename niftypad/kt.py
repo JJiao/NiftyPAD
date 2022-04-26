@@ -104,17 +104,13 @@ def tac_dt_fill_coffee_break(tac, dt, interp, fig=False):
     mft = dt2mft(dt)
     dt_no_gaps = dt_fill_gaps(dt)
     mft_no_gaps = dt2mft(dt_no_gaps)
-    if interp is 'linear':
-        tac_inputf1linear = interpt1(mft, tac, dt)
-        tac_no_gaps = int2dt(tac_inputf1linear, dt_no_gaps)
-    if interp is 'cubic':
-        tac_inputf1cubic = interpt1cubic(mft, tac, dt)
-        tac_no_gaps = int2dt(tac_inputf1cubic, dt_no_gaps)
-    if interp is 'linear':
-        tac_inputf1linear = interpt1(mft, tac, dt)
-        tac_no_gaps = int2dt(tac_inputf1linear, dt_no_gaps)
-    if interp is 'zero':
+    if interp in ['linear', 'cubic']:
+        tac_inputf1 = {'linear': interpt1, 'cubic': interpt1cubic}[interp](mft, tac, dt)
+        tac_no_gaps = int2dt(tac_inputf1, dt_no_gaps)
+    elif interp == 'zero':
         tac_no_gaps = np.zeros_like(mft_no_gaps)
+    else:
+        raise ValueError(interp)
     if fig:
         plt.plot(mft, tac, '.')
         plt.plot(dt2mft(dt_no_gaps), tac_no_gaps, 'r')
