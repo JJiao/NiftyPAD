@@ -17,7 +17,6 @@ def dt2tdur(dt):
 
 
 def mft2tdur(mft):
-    print('mind the gap')
     tdur = np.zeros_like(mft)
     tdur[0] = mft[0] * 2
     for i in range(1, len(mft)):
@@ -26,7 +25,6 @@ def mft2tdur(mft):
 
 
 def tdur2dt(tdur):
-    print('mind the gap')
     st = np.zeros_like(tdur)
     et = np.zeros_like(tdur)
     st[0] = 0
@@ -34,22 +32,32 @@ def tdur2dt(tdur):
     for i in range(1, len(tdur)):
         st[i] = et[i - 1]
         et[i] = st[i] + tdur[i]
-    dt = [st, et]
+    dt = np.array([st, et])
     return dt
 
 
 def mft2dt(mft):
-    print('mind the gap')
     tdur = mft2tdur(mft)
     dt = tdur2dt(tdur)
+    dt = np.rint(dt).astype(int)
     return dt
 
 
 def tdur2mft(tdur):
-    print('mind the gap')
     dt = tdur2dt(tdur)
     mft = dt2mft(dt)
     return mft
+
+
+def mft_tdur2dt(mft, tdur):
+    tdur_dummy = mft2tdur(mft)
+    index = np.where(tdur_dummy - tdur != 0)
+    dt = mft2dt(mft)
+    for i in index:
+        dt[0, i] = mft[i] - tdur[i] / 2
+        dt[1, i] = mft[i] + tdur[i] / 2
+    dt = np.rint(dt).astype(int)
+    return dt
 
 
 def dt_has_gaps(dt):
@@ -61,6 +69,18 @@ def dt_has_gaps(dt):
     return dt_has_gaps
 
 
+def dt_find_gaps(dt):
+    dt_gaps = []
+    unique, counts = np.unique(dt, return_counts=True)
+    gap_ends = unique[counts == 1]
+    if len(gap_ends) > 2:
+        gap_ends = gap_ends[1:-1]
+        gap_starts_index = range(0, len(gap_ends), 2)
+        for i in gap_starts_index:
+            dt_gaps.append(list(gap_ends[i:i + 2]))
+    return dt_gaps
+
+
 def dt_fill_gaps(dt):
     unique, counts = np.unique(dt, return_counts=True)
     gap_ends = unique[counts == 1]
@@ -70,23 +90,32 @@ def dt_fill_gaps(dt):
         for i in gap_starts_index:
             # print(gap_ends[i:i+2])
             dt_gap = np.unique(np.floor(np.linspace(gap_ends[i], gap_ends[i + 1],
-                                                    10))).astype('int16')
+                                                    10 + 2))).astype('int16')
             tdur_to_insert = np.diff(dt_gap)
             dt_to_insert = tdur2dt(tdur_to_insert) + gap_ends[i]
             dt = np.insert(dt, np.where(dt[1,] == gap_ends[i])[0] + 1, dt_to_insert, axis=-1)
     return dt
 
 
-def tac_dt_fill_coffee_break(tac, dt, fig=False):
-    # interpolate tac with coffee break using cubic interpolation
+def tac_dt_fill_coffee_break(tac, dt, interp, fig=False):
+    # interpolate tac with coffee break using linear or cubic interpolation
     mft = dt2mft(dt)
-    tac_inputf1cubic = interpt1cubic(mft, tac, dt)
     dt_no_gaps = dt_fill_gaps(dt)
-    tac_no_gaps = int2dt(tac_inputf1cubic, dt_no_gaps)
+    mft_no_gaps = dt2mft(dt_no_gaps)
+    if interp in ['linear', 'cubic']:
+        tac_inputf1 = {'linear': interpt1, 'cubic': interpt1cubic}[interp](mft, tac, dt)
+        tac_no_gaps = int2dt(tac_inputf1, dt_no_gaps)
+    elif interp == 'zero':
+        tac_no_gaps = np.zeros_like(mft_no_gaps)
+    else:
+        raise ValueError(interp)
     if fig:
         plt.plot(mft, tac, '.')
         plt.plot(dt2mft(dt_no_gaps), tac_no_gaps, 'r')
         plt.show()
+    # replace tac with the original values without interpolation
+    _, index_no_gaps, index = np.intersect1d(mft_no_gaps, mft, return_indices=True)
+    tac_no_gaps[index_no_gaps] = tac[index]
     return tac_no_gaps, dt_no_gaps
 
 
@@ -106,9 +135,9 @@ def int2dt(f1, dt):
 def interpt1(inputt, inputf, dt):
     # interpolate function
     t1 = np.arange(np.amax(dt))
-    if inputt[0] > t1[0]:
-        inputt = np.append(t1[0], inputt)
-        inputf = np.append(0, inputf)
+    # if inputt[0] > t1[0]:
+    #     inputt = np.append(t1[0], inputt)
+    #     inputf = np.append(0, inputf)
     inputff = interp1d(inputt, inputf, kind='linear', fill_value='extrapolate')
     inputf1 = inputff(t1)
     return inputf1

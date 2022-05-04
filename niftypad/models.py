@@ -69,6 +69,32 @@ def srtmb_basis(tac, b):
     return kps
 
 
+def srtmb_basis_ppet(tac, b):
+    tac[tac < 0] = 0.0
+
+    n_beta = b['beta'].size
+    ssq = np.zeros(n_beta)
+
+    if b['w'] is None:
+        b['w'] = 1
+
+    for i in range(0, n_beta):
+        a = np.column_stack((b['input'], b['basis'][i, :]))
+        theta = np.linalg.inv(a.T @ a) @ a.T @ tac
+        tacf = np.dot(a, theta)
+        res = (tac-tacf) * b['w']
+        ssq[i] = np.sum(res**2)
+    i = np.argmin(ssq)
+    a = np.column_stack((b['input'], b['basis'][i, :]))
+    theta = np.linalg.inv(a.T @ a) @ a.T @ tac
+    tacf = np.dot(a, theta)
+
+    theta = np.append(theta, b['beta'][i])
+    r1, k2, bp = kp.srtm_theta2kp(theta)
+    kps = {'r1': r1, 'k2': k2, 'bp': bp, 'tacf': tacf}
+    return kps
+
+
 def srtmb_basis_para2tac(r1, k2, bp, b):
     tacf = []
     theta = kp.srtm_kp2theta(r1, k2, bp)
@@ -136,7 +162,10 @@ def srtmb_k2p_basis(tac, b):
     ssq = np.zeros(n_beta)
 
     if b['w'] is None:
-        b['w'] = 1
+        b['w'] = np.ones_like(tac)
+    # b['w'] = np.ones_like(tac)
+    # b['w'][0:2] = 0
+    # print(b['w'])
     for i in range(0, n_beta):
         r1 = np.sum(b['w'] * b['basis_k2p'][i] * tac) / np.sum(b['w'] * b['basis_k2p'][i]**2)
         ssq[i] = np.sum(b['w'] * (tac - r1 * b['basis_k2p'][i])**2)
@@ -174,18 +203,28 @@ def srtmb_k2p(tac, dt, inputf1, beta_lim, n_beta, w, k2p):
 # # # # # # graphic models
 
 
-def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
+def logan_ref(tac, dt, inputf1, w, linear_phase_start_l, linear_phase_end_l, fig):
     """
     logan reference plot without fixed k2p for tac, based on eq.7 in
     "Distribution Volume Ratios Without Blood Sampling from Graphical Analysis of PET Data"
     """
+    # TODO: put this linear phase stuff into one function
+    # and re-use it everywhere
+    if w is None:
+        w = np.ones_like(tac)
+    linear_phase_start = linear_phase_start_l
+    linear_phase_end = linear_phase_end_l
     if linear_phase_start is None:
         linear_phase_start = 0
     if linear_phase_end is None:
         linear_phase_end = np.amax(dt)
+    if linear_phase_end > np.amax(dt):
+        linear_phase_end = np.amax(dt)
+
     # fill the coffee break gap
     if kt.dt_has_gaps(dt):
-        tac, dt = kt.tac_dt_fill_coffee_break(tac, dt)
+        w, _ = kt.tac_dt_fill_coffee_break(w, dt, interp='zero')
+        tac, dt = kt.tac_dt_fill_coffee_break(tac, dt, interp='linear')
     mft = kt.dt2mft(dt)
     mft = np.append(0, mft)
     dt_new = np.array([mft[:-1], mft[1:]])
@@ -222,12 +261,16 @@ def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     tt = np.logical_and(tt, yy < infinf)
 
     # do linear regression with selected tt
-    xx = xx[tt]
-    yy = yy[tt]
-
-    dvr, inter, _, _, _ = linregress(xx, yy)
+    # xx = xx[tt]
+    # yy = yy[tt]
+    # dvr, inter, _, _, _ = linregress(xx, yy)
+    # bp = dvr - 1
+    # yyf = dvr * xx + inter
+    reg = LinearRegression().fit(xx[tt].reshape(-1, 1), yy[tt], sample_weight=w[tt])
+    dvr = reg.coef_[0]
     bp = dvr - 1
-    yyf = dvr*xx + inter
+    yyf = reg.predict(xx.reshape(-1, 1))
+
     if fig:
         plt.plot(xx, yy, '.')
         plt.plot(xx, yyf, 'r')
@@ -236,18 +279,25 @@ def logan_ref(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     return kps
 
 
-def logan_ref_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
+def logan_ref_k2p(tac, dt, inputf1, k2p, w, linear_phase_start_l2, linear_phase_end_l2, fig):
     """
     logan reference plot with fixed k2p for tac, based on eq.6 in
     "Distribution Volume Ratios Without Blood Sampling from Graphical Analysis of PET Data"
     """
+    if w is None:
+        w = np.ones_like(tac)
+    linear_phase_start = linear_phase_start_l2
+    linear_phase_end = linear_phase_end_l2
     if linear_phase_start is None:
         linear_phase_start = 0
     if linear_phase_end is None:
         linear_phase_end = np.amax(dt)
+    if linear_phase_end > np.amax(dt):
+        linear_phase_end = np.amax(dt)
     # fill the coffee break gap
     if kt.dt_has_gaps(dt):
-        tac, dt = kt.tac_dt_fill_coffee_break(tac, dt)
+        w, _ = kt.tac_dt_fill_coffee_break(w, dt, interp='zero')
+        tac, dt = kt.tac_dt_fill_coffee_break(tac, dt, interp='linear')
     mft = kt.dt2mft(dt)
     mft = np.append(0, mft)
     dt_new = np.array([mft[:-1], mft[1:]])
@@ -282,12 +332,12 @@ def logan_ref_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, f
     tt = np.logical_and(tt, yy < infinf)
 
     # do linear regression with selected tt
-    xx = xx[tt]
-    yy = yy[tt]
 
-    dvr, inter, _, _, _ = linregress(xx, yy)
+    reg = LinearRegression().fit(xx[tt].reshape(-1, 1), yy[tt], sample_weight=w[tt])
+    dvr = reg.coef_[0]
     bp = dvr - 1
-    yyf = dvr*xx + inter
+    yyf = reg.predict(xx.reshape(-1, 1))
+
     if fig:
         plt.plot(xx, yy, '.')
         plt.plot(xx[tt], yyf[tt], 'r')
@@ -296,15 +346,22 @@ def logan_ref_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, f
     return kps
 
 
-def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
+def mrtm(tac, dt, inputf1, w, linear_phase_start_m, linear_phase_end_m, fig):
     """Ichise's multilinear reference tissue model"""
+    if w is None:
+        w = np.ones_like(tac)
+    linear_phase_start = linear_phase_start_m
+    linear_phase_end = linear_phase_end_m
     if linear_phase_start is None:
         linear_phase_start = 0
     if linear_phase_end is None:
         linear_phase_end = np.amax(dt)
+    if linear_phase_end > np.amax(dt):
+        linear_phase_end = np.amax(dt)
     # fill the coffee break gap
     if kt.dt_has_gaps(dt):
-        tac, dt = kt.tac_dt_fill_coffee_break(tac, dt)
+        w, _ = kt.tac_dt_fill_coffee_break(w, dt, interp='zero')
+        tac, dt = kt.tac_dt_fill_coffee_break(tac, dt, interp='linear')
     mft = kt.dt2mft(dt)
     mft = np.append(0, mft)
     dt_new = np.array([mft[:-1], mft[1:]])
@@ -333,7 +390,7 @@ def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
 
     mft = mft[1:]
 
-    reg = LinearRegression(fit_intercept=False).fit(xx[tt,], yy[tt])
+    reg = LinearRegression(fit_intercept=False).fit(xx[tt,], yy[tt], sample_weight=w[tt])
     bp = -reg.coef_[0] / reg.coef_[1] - 1
     k2p = reg.coef_[0] / reg.coef_[2]
     # for 1 TC
@@ -362,15 +419,22 @@ def mrtm(tac, dt, inputf1, linear_phase_start, linear_phase_end, fig):
     return kps
 
 
-def mrtm_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
+def mrtm_k2p(tac, dt, inputf1, k2p, w, linear_phase_start_m2, linear_phase_end_m2, fig):
     """Ichise's multilinear reference tissue model with fixed k2prime"""
+    if w is None:
+        w = np.ones_like(tac)
+    linear_phase_start = linear_phase_start_m2
+    linear_phase_end = linear_phase_end_m2
     if linear_phase_start is None:
         linear_phase_start = 0
     if linear_phase_end is None:
         linear_phase_end = np.amax(dt)
+    if linear_phase_end > np.amax(dt):
+        linear_phase_end = np.amax(dt)
     # fill the coffee break gap
     if kt.dt_has_gaps(dt):
-        tac, dt = kt.tac_dt_fill_coffee_break(tac, dt)
+        w, _ = kt.tac_dt_fill_coffee_break(w, dt, interp='zero')
+        tac, dt = kt.tac_dt_fill_coffee_break(tac, dt, interp='linear')
     mft = kt.dt2mft(dt)
     mft = np.append(0, mft)
     dt_new = np.array([mft[:-1], mft[1:]])
@@ -399,7 +463,7 @@ def mrtm_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
     tt = tt[1:]
 
     mft = mft[1:]
-    reg = LinearRegression(fit_intercept=False).fit(xx[tt,], yy[tt])
+    reg = LinearRegression(fit_intercept=False).fit(xx[tt,], yy[tt], sample_weight=w[tt])
     bp = -reg.coef_[0] / reg.coef_[1] - 1
 
     # for 1 TC
@@ -432,6 +496,7 @@ def mrtm_k2p(tac, dt, inputf1, k2p, linear_phase_start, linear_phase_end, fig):
 
 
 def logan_ref_ppet(tac, dt, ref, linear_phase_start, linear_phase_end, fig):
+    # TODO: should this be (tac, dt, ref, k2p, w, linear_phase_start, linear_phase_end, fig)?
     """
     logan_ref - logan reference plot without fixed k2p for tac, based on eq.7 in
     "Distribution Volume Ratios Without Blood Sampling from Graphical Analysis of PET Data"
@@ -504,7 +569,7 @@ def logan_ref_ppet(tac, dt, ref, linear_phase_start, linear_phase_end, fig):
     return kps
 
 
-def logan_ref_k2p_ppet(tac, dt, ref, k2p, linear_phase_start, linear_phase_end, fig):
+def logan_ref_k2p_ppet(tac, dt, ref, k2p, w, linear_phase_start, linear_phase_end, fig):
     """
     logan_ref_k2p - logan reference plot with fixed k2p for tac, based on eq.6 in
     "Distribution Volume Ratios Without Blood Sampling from Graphical Analysis of PET Data"
@@ -575,7 +640,7 @@ def logan_ref_k2p_ppet(tac, dt, ref, k2p, linear_phase_start, linear_phase_end, 
     return kps
 
 
-def mrtm_ppet(tac, dt, ref, linear_phase_start, linear_phase_end, fig):
+def mrtm_ppet(tac, dt, ref, w, linear_phase_start, linear_phase_end, fig):
     """
     Ichise's multilinear reference tissue model.
     PPET version: calculate input_dt and input_cum differently
@@ -625,7 +690,7 @@ def mrtm_ppet(tac, dt, ref, linear_phase_start, linear_phase_end, fig):
 
     mft = mft[1:]
 
-    reg = LinearRegression(fit_intercept=False).fit(xx[tt,], yy[tt])
+    reg = LinearRegression(fit_intercept=False).fit(xx[tt,], yy[tt], sample_weight=w)
     bp = -reg.coef_[0] / reg.coef_[1] - 1
     k2p = reg.coef_[0] / reg.coef_[2]
     # for 1 TC
@@ -654,7 +719,7 @@ def mrtm_ppet(tac, dt, ref, linear_phase_start, linear_phase_end, fig):
     return kps
 
 
-def mrtm_k2p_ppet(tac, dt, ref, k2p, linear_phase_start, linear_phase_end, fig):
+def mrtm_k2p_ppet(tac, dt, ref, k2p, w, linear_phase_start, linear_phase_end, fig):
     """
     Ichise's multilinear reference tissue model with fixed k2prime.
     PPET version: calculate input_dt and input_cum differently
@@ -704,7 +769,7 @@ def mrtm_k2p_ppet(tac, dt, ref, k2p, linear_phase_start, linear_phase_end, fig):
     tt = tt[1:]
 
     mft = mft[1:]
-    reg = LinearRegression(fit_intercept=False).fit(xx[tt,], yy[tt])
+    reg = LinearRegression(fit_intercept=False).fit(xx[tt,], yy[tt], sample_weight=w)
     bp = -reg.coef_[0] / reg.coef_[1] - 1
 
     # for 1 TC
@@ -836,7 +901,7 @@ def exp_1(tac, dt, idx, w, fig):
     if w is None:
         w = np.ones_like(tac)
     ts_te_w = (dt[0, idx], dt[1, idx], w[idx])
-    p0 = (1000, 5000, 10)
+    p0 = (3000, 1, 1)
     p, _ = curve_fit(exp_1_fun, ts_te_w, tac[idx] * w[idx], p0)
     a0, a1, b1 = p
     t1 = np.arange(np.amax(dt))
@@ -868,7 +933,7 @@ def exp_2(tac, dt, idx, w, fig):
     if w is None:
         w = np.ones_like(tac)
     ts_te_w = (dt[0, idx], dt[1, idx], w[idx])
-    p0 = (1, 1, 1, 0, 0)
+    p0 = (3000, 1, 1, 1, 1)
     p, _ = curve_fit(exp_2_fun, ts_te_w, tac[idx] * w[idx], p0)
     a0, a1, a2, b1, b2 = p
     t1 = np.arange(np.amax(dt))
@@ -987,7 +1052,7 @@ def feng_srtm(tac, dt, w, fig):
     a0, a1, a2, a3, b0, b1, b2, b3 = p
     t1 = np.arange(np.amax(dt))
     tac1f = feng_srtm_fun_t(t1, a0, a1, a2, a3, b0, b1, b2, b3)
-    print(tac1f)
+    # print(tac1f)
     if fig:
         print(p)
         cp1f = feng_fun_t(t1, a0, a1, a2, b0, b1, b2)
