@@ -6,9 +6,11 @@ from niftypad.tac import TAC
 from niftypad.kt import dt2tdur
 from niftypad.image_process.regions import extract_regional_values
 import matplotlib.pyplot as plt
+import nibabel as nib
+import os
 
 
-def image_to_parametric(pet_image, dt, model_name, model_inputs, km_outputs, thr=0.005):
+def image_to_parametric(pet_image, dt, model_name, model_inputs, km_outputs, mask=None, thr=0.005):
     parametric_images = []
     tac = TAC(pet_image[0, 0, 0, ]*0+1, dt)
     tac.run_model(model_name, model_inputs)
@@ -16,8 +18,10 @@ def image_to_parametric(pet_image, dt, model_name, model_inputs, km_outputs, thr
     for p in range(len(km_outputs)):
         parametric_images.append(np.zeros(pet_image.shape[0:3]))
     pet_image_fit = np.zeros(pet_image.shape)
-    thr = thr * np.amax(pet_image)
-    mask = np.argwhere(np.mean(pet_image, axis=-1) > thr)
+    if mask is None:
+        thr = thr * np.amax(pet_image)
+        mask = np.argwhere(np.mean(pet_image, axis=-1) > thr)
+    print(mask.shape[0])
     for i in range(mask.shape[0]):
         # print(str(i) + '/' + str(mask.shape[0]))
         tac = TAC(pet_image[mask[i][0], mask[i][1], mask[i][2], ], dt)
@@ -31,12 +35,31 @@ def image_to_parametric(pet_image, dt, model_name, model_inputs, km_outputs, thr
         # # #
         # print(tac.km_results)
         # # #
+        # km_outputs has already been checked to ensure everything exists in tac.km_results
         for p in range(len(km_outputs)):
             parametric_images[p][mask[i][0], mask[i][1], mask[i][2], ] = tac.km_results[km_outputs[p].lower()]
     parametric_images_dict = dict(zip(km_outputs, parametric_images))
     if 'tacf' in tac.km_results:
         return parametric_images_dict, pet_image_fit
     return parametric_images_dict
+
+
+def image_to_parametric_files(pet_image_file, dt, model_name, model_inputs, km_outputs, mask_file=None, thr=0.005,
+                              save_path=None):
+    img = nib.load(pet_image_file)
+    pet_image = img.get_data()
+    if mask_file is not None:
+        mask = nib.load(mask_file)
+        mask = mask.get_data()
+        mask = np.argwhere(mask > 0)
+    else:
+        mask = None
+    parametric_images_dict = image_to_parametric(pet_image, dt, model_name, model_inputs, km_outputs, mask=mask, thr=thr)
+    if save_path is None:
+        save_path = ''
+    for kp in parametric_images_dict.keys():
+        nib.save(nib.Nifti1Image(parametric_images_dict[kp], img.affine), save_path + os.path.splitext(os.path.basename(img.get_filename()))[0] +
+                 '_' + model_name + '_' + kp + os.path.splitext(img.get_filename())[1])
 
 
 def parametric_to_image(parametric_images_dict, dt, model, km_inputs):
