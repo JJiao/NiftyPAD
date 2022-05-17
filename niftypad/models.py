@@ -696,7 +696,7 @@ def logan_ref_k2p_ppet(tac, dt, ref, k2p, w, linear_phase_start, linear_phase_en
 
 
 # mrtm - Ichise's multilinear reference tissue model
-#  PPET version: calculate input_dt and input_cum differently
+#  PPET version: calculate input_dt and input_cum, tac_cum differently
 def mrtm_ppet(tac, dt, inputf1, w, linear_phase_start_m, linear_phase_end_m, fig):
     if w is None:
         w = np.ones_like(tac)
@@ -712,10 +712,10 @@ def mrtm_ppet(tac, dt, inputf1, w, linear_phase_start_m, linear_phase_end_m, fig
     if kt.dt_has_gaps(dt):
         w, _ = kt.tac_dt_fill_coffee_break(w, dt, interp='zero')
         tac, dt = kt.tac_dt_fill_coffee_break(tac, dt, interp='linear')
+
     mft = kt.dt2mft(dt)
     mft = np.append(0, mft)
-    dt_new = np.array([mft[:-1], mft[1:]])
-    tdur = kt.dt2tdur(dt_new)
+
     # input_dt = kt.int2dt(inputf1, dt)
     inputff = interp1d(np.arange(len(inputf1)), inputf1, kind='linear', fill_value='extrapolate')
     input_dt = inputff(mft)
@@ -727,7 +727,6 @@ def mrtm_ppet(tac, dt, inputf1, w, linear_phase_start_m, linear_phase_end_m, fig
     tac[tac < 0] = 0.0
     input_dt[input_dt < 0] = 0.0
 
-    tac_cum = np.cumsum((tac[:-1] + tac[1:]) / 2 * tdur)
     # calculate input_cum using inputf1, and only until mid frame time
     input_cum1 = np.cumsum(inputf1)
     input_cum1_mft = input_cum1[mft.astype(int)]
@@ -736,6 +735,17 @@ def mrtm_ppet(tac, dt, inputf1, w, linear_phase_start_m, linear_phase_end_m, fig
     tac = tac[1:]
     input_dt = input_dt[1:]
     input_cum = input_cum[1:]
+
+    # PPET tac_cum calculation
+    tac_cum = np.zeros_like(input_cum)
+    mft_tac = mft[1:]
+    for i in range(len(mft_tac)):
+        if i == 0:
+            tac_cum[i] = tac[i] * (mft_tac[i] - dt[0, i])
+        else:
+            tac_cum[i] = tac_cum[i-1] + tac[i-1] * (dt[1, i-1] - mft_tac[i-1]) + tac[i] * (mft_tac[i] - dt[0, i])
+    # PPET tac_cum calculation
+
     yy = tac
     xx = np.column_stack((input_cum, tac_cum, input_dt))
 
@@ -745,9 +755,9 @@ def mrtm_ppet(tac, dt, inputf1, w, linear_phase_start_m, linear_phase_end_m, fig
 
     mft = mft[1:]
 
-    reg = LinearRegression(fit_intercept=False).fit(xx[tt,], yy[tt], sample_weight=w[tt])
-    bp = - reg.coef_[0] / reg.coef_[1] - 1
-    k2p = reg.coef_[0] / reg.coef_[2]
+    reg = LinearRegression(fit_intercept=False).fit(xx[tt, ], yy[tt], sample_weight=w[tt])
+    bp = - reg.coef_[0] / (reg.coef_[1] + 0.0000000000000001) - 1
+    k2p = reg.coef_[0] / (reg.coef_[2] + 0.0000000000000001)
     # for 1 TC
     r1 = reg.coef_[2]
     k2 = - reg.coef_[1]

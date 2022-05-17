@@ -35,6 +35,7 @@ def extract_regional_values_image_file(image_file, parcellation_file):
     return regions_data, regions_label
 
 
-
-
-
+def get_index_and_value_for_a_region(image, parcellation, labels):
+    idx = labels_to_index(parcellation, labels)  # idx is a binary mask
+    region_values = image[idx, ]
+    return idx, region_values
