@@ -7,15 +7,23 @@ from . import readers
 log = logging.getLogger(__name__)
 
 
-def kinetic_model(src, dst=None, params=None, model='srtmb_basis', input_interp_method='linear',
-                  w=None, r1=1, k2p=0.000250, beta_lim=None, n_beta=40, linear_phase_start=500,
-                  linear_phase_end=None, km_outputs=None, thr=0.1, fig=False):
+# def kinetic_model(src, dst=None, params=None, model='srtmb_basis', input_interp_method='linear',
+#                   w=None, r1=1, k2p=0.000250, beta_lim=None, n_beta=40, linear_phase_start=500,
+#                   linear_phase_end=None, km_outputs=None, thr=0.1, fig=False):
+
+def kinetic_models(src, dst=None, params=None, models=['srtmb_basis','logan_ref'], input_interp_method='linear',
+                  w=None, r1=1, k2p=0.000250, beta_lim=None, n_beta=40, 
+                  linear_phase_start_l=500, linear_phase_end_l=None, 
+                  linear_phase_start_m=500, linear_phase_end_m=None, 
+                  linear_phase_start_m2=500, linear_phase_end_m2=None,
+                  km_outputs=None, mask=None, thr=0.1, fig=False):
+  
     """
     Args:
       src (Path or str): input patient directory or filename
       dst (Path or str): output directory (default: `src` directory)
       params (Path or str): config (relative to `src` directory)
-      model (str): any model from `niftypad.models` (see `niftypad.models.NAMES`)
+      models (list[str]): list of any model from `niftypad.models` (see `niftypad.models.NAMES`)
       input_interp_method (str): the interpolation method for getting reference input:
         linear, cubic, exp_1, exp_2, feng_srtm
       w (ndarray): weights for weighted model fitting
@@ -26,12 +34,17 @@ def kinetic_model(src, dst=None, params=None, model='srtmb_basis', input_interp_
         of beta values in basis functions, used in srtmb_basis, srtmb_k2p_basis, srtmb_asl_basis
       n_beta (int): number of beta values/basis functions, used in
         srtmb_basis, srtmb_k2p_basis, srtmb_asl_basis
-      linear_phase_start (int): start time of linear phase in seconds, used in logan_ref,
-        logan_ref_k2p, mrtm, mrtm_k2p
-      linear_phase_end (int): end time of linear phase in seconds, used in logan_ref,
-        logan_ref_k2p, mrtm, mrtm_k2p
+      linear_phase_start_l (int): start time of linear phase in seconds for logan_ref,
+      linear_phase_end_l (int): end time of linear phase in seconds for logan_ref,
+      linear_phase_start_l2 (int): start time of linear phase in seconds for logan_ref_k2p,
+      linear_phase_end_l2 (int): end time of linear phase in seconds for logan_ref_k2p,
+      linear_phase_start_m (int): start time of linear phase in seconds for mrtm
+      linear_phase_end_m (int): end time of linear phase in seconds for mrtm
+      linear_phase_start_m2 (int): start time of linear phase in seconds for mrtm_k2p
+      linear_phase_end_m2 (int): end time of linear phase in seconds for mrtm_k2p
       km_outputs (list[str]): the kinetic parameters to save, e.g. ['R1', 'k2', 'BP']
-      thr (float): threshold value between 0 and 1. Used to mask out voxels with mean value
+      mask (str): image file that contain a mask to select voxels to apply kinetic models, where mask[voxel]>0 indicates voxel is selected 
+      thr (float): threshold value between 0 and 1. Only used if mask is None. Used to mask out voxels with mean value
         over time exceeding `thr * max(image value)`
       fig (bool): whether to show a figure to check model fitting
     """
@@ -39,7 +52,8 @@ def kinetic_model(src, dst=None, params=None, model='srtmb_basis', input_interp_
     import numpy as np
 
     from niftypad import basis
-    from niftypad.image_process.parametric_image import image_to_parametric
+#     from niftypad.image_process.parametric_image import image_to_parametric
+    from niftypad.image_process.parametric_image import image_to_parametric_files
     from niftypad.models import get_model_inputs
     from niftypad.tac import Ref
 
@@ -77,18 +91,43 @@ def kinetic_model(src, dst=None, params=None, model='srtmb_basis', input_interp_
 
     if km_outputs is None:
         km_outputs = ['R1', 'k2', 'BP']
+        
     # change ref.inputf1cubic -> ref.input_interp_1
-    user_inputs = {
-        'dt': dt, 'ref': ref, 'inputf1': ref.input_interp_1, 'w': w, 'r1': r1, 'k2p': k2p,
-        'beta_lim': beta_lim, 'n_beta': n_beta, 'b': b, 'linear_phase_start': linear_phase_start,
-        'linear_phase_end': linear_phase_end, 'fig': fig}
-    model_inputs = get_model_inputs(user_inputs, model)
+    
+#     user_inputs = {
+#         'dt': dt, 'ref': ref, 'inputf1': ref.input_interp_1, 'w': w, 'r1': r1, 'k2p': k2p,
+#         'beta_lim': beta_lim, 'n_beta': n_beta, 'b': b, 'linear_phase_start': linear_phase_start,
+#         'linear_phase_end': linear_phase_end, 'fig': fig}
+
+    user_inputs = {'dt': dt,
+                   'inputf1': ref.input_interp_1,
+                   'fig': fig,
+                   'w': w,
+                   'k2p': k2p,
+                   'beta_lim': beta_lim,
+                   'n_beta': n_beta,
+                   'b': b,
+                   'linear_phase_start_l': linear_phase_start_l,
+                   'linear_phase_end_l': linear_phase_end_l,
+                   'linear_phase_start_l2': linear_phase_start_l2,
+                   'linear_phase_end_l2': linear_phase_end_l2,
+                   'linear_phase_start_m': linear_phase_start_m,
+                   'linear_phase_end_m': linear_phase_end_m,
+                   'linear_phase_start_m2': linear_phase_start_m2,
+                   'linear_phase_end_m2': linear_phase_end_m2
+                   }
+#     model_inputs = get_model_inputs(user_inputs, model)
     # log.debug("model_inputs:%s", model_inputs)
 
-    parametric_images_dict, pet_image_fit = image_to_parametric(pet_image, dt, model, model_inputs,
-                                                                km_outputs, thr=thr)
-    for kp in parametric_images_dict:
-        nib.save(nib.Nifti1Image(parametric_images_dict[kp], img.affine),
-                 f"{dst_path / fpath.stem}_{model}_{kp}_{fpath.suffix}")
-    nib.save(nib.Nifti1Image(pet_image_fit, img.affine),
-             f"{dst_path / fpath.stem}_{model}_fit_{fpath.suffix}")
+#     parametric_images_dict, pet_image_fit = image_to_parametric(pet_image, dt, model, model_inputs,
+#                                                                 km_outputs, thr=thr)
+#     for kp in parametric_images_dict:
+#         nib.save(nib.Nifti1Image(parametric_images_dict[kp], img.affine),
+#                  f"{dst_path / fpath.stem}_{model}_{kp}_{fpath.suffix}")
+#     nib.save(nib.Nifti1Image(pet_image_fit, img.affine),
+#              f"{dst_path / fpath.stem}_{model}_fit_{fpath.suffix}")
+
+    for model_name in models:
+        model_inputs = get_model_inputs(user_inputs, model_name)
+        image_to_parametric_files(pet_image_file=pet_image_file, dt=dt, model_name=model_name, model_inputs=model_inputs,
+                                  km_outputs=km_outputs, mask_file=mask, thr=thr, save_path=dst_path)
