@@ -9,9 +9,9 @@ import numpy as np
 
 def get_weight(dt, isotope='18F', a=1, t=None, r=None, tac=None):
 
-    if isotope == '18F':
+    if isotope == '12C':
         half_life = 20.39 * 60
-    elif isotope == '12C':
+    elif isotope == '18F':
         half_life = 109.77 * 60
     else:
         print('not known yet')
@@ -40,12 +40,14 @@ def get_weight(dt, isotope='18F', a=1, t=None, r=None, tac=None):
 
 
 def get_weight_ppet(dt, tac, isotope='12C', a=1):
-    if isotope == '18F':
+    
+    if isotope == '12C':
         half_life = 20.39 * 60
-    elif isotope == '12C':
+    elif isotope == '18F':
         half_life = 109.77 * 60
     else:
         print('not known yet')
+
     decay_const = np.log(2)/half_life
 
     tdur = kt.dt2tdur(dt)
