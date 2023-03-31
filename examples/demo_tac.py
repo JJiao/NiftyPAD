@@ -49,8 +49,14 @@ user_inputs = {'dt': dt,
                'beta_lim': beta_lim,
                'n_beta': n_beta,
                'b': b,
-               'linear_phase_start': 500,
-               'linear_phase_end': None,
+               'linear_phase_start_l': 500,
+               'linear_phase_end_l': None,
+               'linear_phase_start_l2': 500,
+               'linear_phase_end_l2': None,
+               'linear_phase_start_m': 500,
+               'linear_phase_end_m': None,
+               'linear_phase_start_m2': 500,
+               'linear_phase_end_m2': None,
                'fig': True
                }
 
