@@ -345,7 +345,7 @@ def logan_ref_k2p(tac, dt, inputf1, k2p, w, linear_phase_start_l2, linear_phase_
     # select tt for tac > 0
     tt = np.logical_and(tt, tac > 0)
     # select tt for xx < inf, yy < inf
-    infinf = 1e10
+    infinf = 1e20
     tt = np.logical_and(tt, xx < infinf)
     tt = np.logical_and(tt, yy < infinf)
     tt = np.logical_and(tt, w > 0)
